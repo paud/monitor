@@ -2,7 +2,8 @@ CC32 = i686-w64-mingw32-gcc -m32
 CC64 = x86_64-w64-mingw32-gcc -m64
 AR = ar
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
-		 -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/ -mwindows
+		 -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/ #-mwindows 
+		                                                    #这里的-mwindows使得编译出来的文件只能用在cygwin和mimgw，而在dos下printf没有输出
 LDFLAGS = -lshlwapi
 MAKEFLAGS = -j8
 

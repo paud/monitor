@@ -1,26 +1,10 @@
-/*
-Cuckoo Sandbox - Automated Malware Analysis.
-Copyright (C) 2015-2017 Cuckoo Foundation.
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <stdio.h>
 #include <stdint.h>
+//#include "corecrt_wstring.h"
 #include <windows.h>
 #include <tlhelp32.h>
 
+/*
 static BOOL (WINAPI *pIsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);
 
 void error(const char *fmt, ...)
@@ -50,7 +34,6 @@ uint32_t pid_from_process_name(const wchar_t *process_name)
     }
 
     do {
-        //modified by simpower91 as wcsicmp not exists in vscode
         if(wcsicmp(row.szExeFile, process_name) == 0) {
             CloseHandle(snapshot_handle);
             return row.th32ProcessID;
@@ -164,12 +147,10 @@ int main()
 {
     LPWSTR *argv; int argc;
 
-    //printf("fdafdaf\r");
-    //return 0;
-
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if(argv == NULL) {
         error("Error parsing commandline options!\n");
+        //print_line("Error parsing commandline options!\n");
     }
 
     if(argc != 3) {
@@ -209,3 +190,26 @@ int main()
     error("Invalid action specified..\n");
     return 1;
 }
+*/ 
+
+
+    int g_var = 0;
+    void print_line(char *str)
+    {
+        if (str != NULL)
+            printf("%s\r \n", str);
+        else
+            printf("null string\r\n");
+    }
+
+    
+    int main (int argc, char **argv)
+    {
+        int l_var = 1;
+        print_line(" error hello world!");
+        printf("g_var = %d, l_var = %d.\r\n", g_var, l_var);
+        //error("g_var = %d, l_var = %d.\r\n", g_var, l_var);
+       return 0;
+    }
+
+   
