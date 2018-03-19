@@ -520,6 +520,9 @@ int main()
             "Options:\n"
             "  --crt                  CreateRemoteThread injection\n"
             "  --apc                  QueueUserAPC injection\n"
+            //modified by simpower91
+            "  --cfgcp                Do not delete the temp config file"
+
             "  --free                 Do not inject our monitor\n"
             "  --dll <dll>            DLL to inject\n"
             "  --app <app>            Path to application to start\n"
@@ -556,6 +559,8 @@ int main()
     uint32_t pid = 0, tid = 0, from = 0, inj_mode = INJECT_NONE, partial = 0;
     uint32_t show_window = SW_SHOWNORMAL, only_start = 0, resume_thread_ = 0;
     uintptr_t dump_addr = 0, dump_length = 0;
+    //modified by simpower91  do not delete temp config file when copy it to c:\cuckoo_xxx.ini
+    BOOL cfgcp=FALSE;
 
     for (int idx = 1; idx < argc; idx++) {
         if(wcscmp(argv[idx], L"--crt") == 0) {
@@ -580,6 +585,12 @@ int main()
 
         if(wcscmp(argv[idx], L"--app") == 0) {
             app_path = argv[++idx];
+            continue;
+        }
+
+        //modified by simpower91  do not delete temp config file when copy it to c:\cuckoo_xxx.ini
+        if(wcscmp(argv[idx], L"--cfgcp") == 0) {
+            cfgcp=TRUE;
             continue;
         }
 
@@ -778,8 +789,16 @@ int main()
     if(config_file != NULL) {
         static wchar_t filepath[MAX_PATH_W];
 
-        wsprintfW(filepath, L"C:\\cuckoo_%d.ini", pid);
-        if(MoveFileW(config_file, filepath) == FALSE) {
+        wsprintfW(filepath, L"D:\\cuckoo_%d.ini", pid);
+
+        //modified by simpower91  do not delete temp config file when copy it to c:\cuckoo_xxx.ini
+        BOOL cfgsuccess;
+        if(cfgcp){
+          cfgsuccess = CopyFileW(config_file, filepath,FALSE);
+        }else{
+          cfgsuccess = MoveFileW(config_file, filepath);  
+        }
+        if(cfgsuccess == FALSE) {
             error("[-] Error dropping configuration file: %ld\n",
                 GetLastError());
         }
