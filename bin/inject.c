@@ -789,7 +789,7 @@ int main()
     if(config_file != NULL) {
         static wchar_t filepath[MAX_PATH_W];
 
-        wsprintfW(filepath, L"D:\\cuckoo_%d.ini", pid);
+        wsprintfW(filepath, L"C:\\cuckoo_%d.ini", pid);
 
         //modified by simpower91  do not delete temp config file when copy it to c:\cuckoo_xxx.ini
         BOOL cfgsuccess;
