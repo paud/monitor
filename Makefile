@@ -4,7 +4,7 @@ AR = ar
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
 		 -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/ #-mwindows 
 		                                                    #这里的-mwindows使得编译出来的文件只能用在cygwin和mimgw，而在dos下printf没有输出
-LDFLAGS = -lshlwapi
+LDFLAGS = -lshlwapi -lwsock32
 MAKEFLAGS = -j8
 
 SIGS = $(wildcard sigs/*.rst)
