@@ -4,34 +4,15 @@
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
-            "name": "inject",
-            "type": "cppdbg",
+            "name": "Python: Current File",
+            "type": "python",
             "request": "launch",
-            //"program": "${file}.exe",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
-            "args": [],
-            "stopAtEntry": false,
-            //"cwd": "${workspaceFolder}",
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "miDebuggerPath": "gdb.exe",
-            "preLaunchTask": "inject",
-            "windows": {
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
+            "program": "${file}"
         },
         {
-            "name": "mingw32",
+            "name": "make",
+            "preLaunchTask": "makeTask",
             "type": "cppdbg",
             "request": "launch",
             //"program": "${file}.exe",
@@ -44,33 +25,56 @@
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "gdb.exe",
-            "preLaunchTask": "mingw32",
             "windows": {
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        }
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            }
+        },
+        {
+            "name": "mingw32_64",
+            "type": "cppdbg",
+            "request": "launch",
+            //"program": "${file}.exe",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            //"cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "E:\\cygwin64\\bin\\gdb.exe", //gdb路径
+            "preLaunchTask": "mingw32x64", //task.json里面的任务名称
+            "windows": {
+                "setupCommands": [
+                    {
+                        "description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": true
+                    }
+                ]
+            }
         },
         {
             "name": "(gdb) Launch",
+            "preLaunchTask": "gcc",
             "type": "cppdbg",
             "request": "launch",
             //"program": "${file}.exe",
             "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
-            "args": [],
+            "args": [], // 程序调试时传递给程序的命令行参数，一般设为空即可
             "stopAtEntry": false,
-            //"cwd": "${workspaceFolder}",
-            "cwd": "${fileDirname}",
+            //"cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "gdb.exe",
-            "preLaunchTask": "gcc",
-            "windows": {
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -78,7 +82,29 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
+        {
+            "name": "makeCustome",
+            "preLaunchTask": "makecustome",
+            "type": "cppdbg",
+            "request": "launch",
+            //"program": "${file}.exe",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [], // 程序调试时传递给程序的命令行参数，一般设为空即可
+            "stopAtEntry": false,
+            //"cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

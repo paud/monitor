@@ -4,23 +4,12 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "inject",
-            "command": "i686-w64-mingw32-gcc",
+            "label": "makeTask",
+            "command": "${workspaceFolder}/vscodeMake.bat",
+            //"command": "vscodeMake.bat",
             "args": [
-                "-m32 -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/", //-mwindows
-                //最后一个参数 -mwindows加上后输出只能出现在cygwin环境，而不会出现在dos环境 
-                //"-g ${file}",   //指定编译源代码文件                    
-                "-o ${fileDirname}/${fileBasenameNoExtension}.exe", // 指定输出文件名，不加该参数则默认输出a.exe
-                "bin/inject.c src/assembly.c",
-                //"-ggdb3",   // 生成和调试有关的信息
-                //"-Wall",    // 开启额外警告
-                //"-static-libgcc",   // 静态链接
-                //"-std=c++17",       // 使用最新的c++17标准
-                //"-Wno-format",
-                //"-finput-charset=UTF-8",//输入编译器文本编码 默认为UTF-8
-                //"-fexec-charset=GBK",//编译器输出文本编码 自行选择
-                "-lshlwapi",               
-                "-I inc",
+                "\"${workspaceFolder}/\"",
+                //"\"${fileDirname}/\"",
             ],
 
             "type": "shell",
@@ -53,22 +42,13 @@
             }
         },
         {
-            "label": "mingw32",
-            "command": "i686-w64-mingw32-gcc",
+            "label": "makecustome",
+            "command": "${workspaceFolder}/vscodeMake.bat",
+            //"command": "vscodeMake.bat",
             "args": [
-                "-m32 -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/", //-mwindows
-                //最后一个参数 -mwindows加上后输出只能出现在cygwin环境，而不会出现在dos环境                
-                "-g ${file}",   //指定编译源代码文件                    
-                "-o ${fileDirname}/${fileBasenameNoExtension}.exe", // 指定输出文件名，不加该参数则默认输出a.exe
-                "-ggdb3",   // 生成和调试有关的信息
-                "-Wall",    // 开启额外警告
-                "-static-libgcc",   // 静态链接
-               // "-std=c++17",       // 使用最新的c++17标准
-                "-Wno-format",
-                "-finput-charset=UTF-8",//输入编译器文本编码 默认为UTF-8
-                "-fexec-charset=GBK"//编译器输出文本编码 自行选择
+                //"\"${workspaceFolder}/\"",
+                "\"${fileDirname}/\"",
             ],
-
             "type": "shell",
 
             "group": {
@@ -79,67 +59,88 @@
             "presentation": {
                 "echo": true,
                 "reveal": "always", // 在“终端”中显示编译信息的策略，可以为always，silent，never
+                "focus": false,
+                "panel": "shared" // 不同的文件的编译信息共享一个终端面板
+            },
+        },
+        {
+            "label": "mingw32x64",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always", // 在“终端”中显示编译信息的策略，可以为always，silent，never
                  "focus": false,
                  "panel": "shared" // 不同的文件的编译信息共享一个终端面板
             },
-
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": [
-                    "relative", "\\"
+            "windows":{
+                //"command":"gcc",
+                "command": "x86_64-w64-mingw32-gcc",//由于我用的是cygwin64,因此gdb只能调试64位程序，可以编译"i686-w64-mingw32-gcc"，但却无法调试，或换cygwin32的gdb
+                "args": [
+                    "-m64",// -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/", //-mwindows
+                    //最后一个参数 -mwindows加上后输出只能出现在cygwin环境，而不会出现在dos环境                
+                    "-g",                       
+                    //"-ggdb3",   // 生成和调试有关的信息
+                    "\"${file}\"", //指定编译源代码文件
+                    //"-o ${fileDirname}/${fileBasenameNoExtension}.exe", // 指定输出文件名，不加该参数则默认输出a.exe
+                    "-o",
+                    "\"${fileDirname}\\${fileBasenameNoExtension}.exe\"",
+                    "-Wall", 
+                    "-Wextra", 
+                    "-std=c99", 
+                    "-static", 
+                    "-Wno-missing-field-initializers",
+                    "-I", 
+                    "\"E:\\cygwin64\\lib\\gcc\\x86_64-w64-mingw32\\6.4.0\\include\"",
+                    "-I", 
+                    "\"src/capstone/include/\"",
+                    "-I", 
+                    "\"inc/\"",
+                    "-I", 
+                    "\"src/\"",
+                    "-I", 
+                    "\"objects/code/\"",
+                    "-I", 
+                    "\"src/bson/\"",
+                    "-I", 
+                    "\"src/sha1/\"", //-mwindows
+                    //最后一个参数 -mwindows加上后输出只能出现在cygwin环境，而不会出现在dos环境  
+                    "-lshlwapi",
+                    "-lwsock32",              
                 ],
-                "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
-            }
+            },
         },
         {
             "label": "gcc",
-            "command": "g++",
-            "args": [
-                "-g ${file}",   //指定编译源代码文件                    
-                "-o ${fileDirname}/${fileBasenameNoExtension}.exe", // 指定输出文件名，不加该参数则默认输出a.exe
-                "-ggdb3",   // 生成和调试有关的信息
-                "-Wall",    // 开启额外警告
-                "-static-libgcc",   // 静态链接
-                "-std=c++17",       // 使用最新的c++17标准
-                "-Wno-format",
-                "-finput-charset=UTF-8",//输入编译器文本编码 默认为UTF-8
-                "-fexec-charset=GBK"//编译器输出文本编码 自行选择
-            ],
-
             "type": "shell",
-
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-
             "presentation": {
                 "echo": true,
                 "reveal": "always", // 在“终端”中显示编译信息的策略，可以为always，silent，never
                  "focus": false,
                  "panel": "shared" // 不同的文件的编译信息共享一个终端面板
             },
-
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": [
-                    "relative", "\\"
-                ],
-                "pattern": {
-                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "severity": 4,
-                    "message": 5
-                }
+            "windows":{
+                "command": "g++",
+                "args": [
+                    "-ggdb",
+                    "\"${file}\"",
+                    "-o",
+                    "\"${fileDirname}\\${fileBasenameNoExtension}.exe\"",
+                    //"-m32", //32位程序编译标记，如果使用的是cygwin64，会找不到32位的lgcc，所以去掉，这个配置会比较通用，无论32/64都可以用
+                    //"--std=c++11",
+                    "-static-libgcc",   // 静态链接
+                    "-std=c++17",       // 使用最新的c++17标准
+                    "-Wno-format",
+                    "-finput-charset=UTF-8",//输入编译器文本编码 默认为UTF-8
+                    "-fexec-charset=GBK"//编译器输出文本编码 自行选择
+                    ],
             }
         }
     ]
