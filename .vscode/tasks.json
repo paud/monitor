@@ -9,6 +9,7 @@
             //"command": "vscodeMake.bat",
             "args": [
                 "\"${workspaceFolder}/\"",
+                "Makefile",
                 //"\"${fileDirname}/\"",
             ],
 
@@ -48,6 +49,7 @@
             "args": [
                 //"\"${workspaceFolder}/\"",
                 "\"${fileDirname}/\"",
+                "make${fileBasenameNoExtension}.txt",
             ],
             "type": "shell",
 

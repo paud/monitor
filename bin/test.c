@@ -209,7 +209,7 @@ int main()
         print_line(" error hello world!");
         printf("g_var = %d, l_var = %d.\r\n", g_var, l_var);
         //error("g_var = %d, l_var = %d.\r\n", g_var, l_var);
-       return 0;
+        return 0;
     }
 
    
