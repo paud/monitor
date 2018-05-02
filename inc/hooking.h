@@ -222,4 +222,7 @@ void ole_enable_hooks(REFCLSID refclsid);
 extern uintptr_t g_monitor_start;
 extern uintptr_t g_monitor_end;
 
+
 #endif
+int hook_determine_start(hook_t *h);
+

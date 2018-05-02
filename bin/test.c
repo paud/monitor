@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include <stdint.h>
+//#include <stdint.h>
 //#include "corecrt_wstring.h"
-#include <windows.h>
-#include <tlhelp32.h>
+//#include <windows.h>
+//#include <tlhelp32.h>
 
 /*
 static BOOL (WINAPI *pIsWow64Process)(HANDLE hProcess, PBOOL Wow64Process);

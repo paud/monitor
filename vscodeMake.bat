@@ -18,9 +18,9 @@ if "%_T%"=="" (
     set _T=%cd%
 )
 if "%a%"=="" (
-echo %a% is not assigned
+    echo %a% is not assigned
 ) else (
-set _makefile=%a%
+    set _makefile=%a%
 )
 ::%tmppath:~0,2%
 ::cd %tmppath%

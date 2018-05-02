@@ -1076,3 +1076,7 @@ int hook_missing_hooks(HMODULE module_handle)
     log_debug("Finished missing hooks @ %p\n", module_handle);
     return 0;
 }
+
+int hook_determine_start(hook_t *h){
+
+}

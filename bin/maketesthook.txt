@@ -1,0 +1,57 @@
+.SUFFIXES:.c .o .h
+CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
+	-I ../inc/ -I ../objects/code/ -I ../src/bson/ -I ../src/sha1/ -I ../src/capstone/include/ #-mwindows
+LDFLAGS = -lshlwapi -lwsock32
+
+CC=x86_64-w64-mingw32-gcc -m64
+CC64 = x86_64-w64-mingw32-gcc -m64
+
+HOOKSRC = ../objects/code/hooks.c
+HOOKOBJ64 = ../objects/x64/code/hooks.o
+FLAGSRC = ../objects/code/flags.c
+FLAGOBJ64 = ../objects/x64/code/flags.o
+INSNSSRC = ../objects/code/insns.c
+INSNSOBJ64 = ../objects/x64/code/insns.o
+
+SRC = $(wildcard ../src/*.c)
+SRCOBJ64 = $(SRC:%.c=%.o)
+HEADER = $(wildcard ../inc/*.h)
+
+BSON = $(wildcard ../src/bson/*.c)
+BSONOBJ64 = $(BSON:%.c=%.o)
+
+SHA1 = ../src/sha1/sha1.c
+SHA1OBJ64 = ../objects/x64/src/sha1/sha1.o
+
+LIBCAPSTONE64 = ../src/capstone/capstone-x64.lib
+
+BINARIES = testhook
+
+all: $(BINARIES)
+
+$(INSNSSRC) $(FLAGSRC): $(HOOKSRC)
+
+#../objects/x64/%.o: %.c $(HEADER) Makefile
+#	$(CC64) -c -o $@ $< $(CFLAGS)
+
+#../objects/x64/%.o: ../objects/x64/%.c $(HEADER) $(HOOKSRC) Makefile
+#	$(CC64) -c -o $@ $< $(CFLAGS)
+
+#$(HOOKOBJ64): $(HOOKSRC) $(HEADER) Makefile
+#	$(CC64) -c -o $@ $< $(CFLAGS)
+
+#$(FLAGOBJ64): $(FLAGSRC) $(HEADER) Makefile
+#	$(CC64) -c -o $@ $< $(CFLAGS)
+
+#$(INSNSOBJ64): $(INSNSSRC) $(HEADER) Makefile
+#	$(CC64) -c -o $@ $< $(CFLAGS)
+
+#testhook: testhook.o
+#	${CC} $< -o3 -Wall capstone.lib -o $@ $(CFLAGS) $(LDFLAGS)
+testhook: testhook.o $(SRCOBJ64) $(HOOKOBJ64) $(FLAGOBJ64) \
+		$(INSNSOBJ64) $(BSONOBJ64) $(LIBCAPSTONE64) $(SHA1OBJ64)
+	$(CC64) -g -o $@ $^ $(CFLAGS) $(LDFLAGS)
+
+%.o: %.c
+	${CC} -c $< -g -o $@ $(CFLAGS) $(LDFLAGS)
+

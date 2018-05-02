@@ -3,7 +3,7 @@ CC=gcc
 SRCS=test.c\
 
 OBJS=$(SRCS:.c=.o)
-EXEC=main
+EXEC=test
  
 build:$(OBJS)
 	$(CC) -o $(EXEC) $(OBJS)

@@ -1,0 +1,23 @@
+#.SUFFIXES:.c .o
+#CC=gcc
+#SRCS=testcapstone.c\
+
+#OBJS=$(SRCS:.c=.o)
+#EXEC=testcapstone
+ 
+#build:$(OBJS)
+#	$(CC) -o $(EXEC) $(OBJS) capstone.lib
+#	@echo '---------------OK---------------'
+ 
+#.c.o:
+#	$(CC) -Wall -g -o $@ -c $< -I ../src/capstone/include/
+ 
+#clean:
+#	rm -f $(OBJS)
+#	rm -f $(EXEC)
+
+testcapstone: testcapstone.o
+	${CC} $< -o3 -Wall capstone.lib -o $@ 
+
+%.o: %.c
+	${CC} -c $< -g -o $@ -I ../src/capstone/include/
