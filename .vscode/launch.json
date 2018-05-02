@@ -88,11 +88,9 @@
             "preLaunchTask": "makecustome",
             "type": "cppdbg",
             "request": "launch",
-            //"program": "${file}.exe",
             "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
             "args": [], // 程序调试时传递给程序的命令行参数，一般设为空即可
             "stopAtEntry": false,
-            //"cwd": "${fileDirname}",
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true,
