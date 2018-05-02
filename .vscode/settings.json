@@ -10,7 +10,9 @@
         "unhook.h": "c",
         "log.h": "c",
         "memory": "c",
-        "xmemory": "c"
+        "xmemory": "c",
+        "*.rh": "c",
+        "sleep.h": "c"
     },
-    "C_Cpp.dimInactiveRegions": true
+    "C_Cpp.dimInactiveRegions": false
 }
