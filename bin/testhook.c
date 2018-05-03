@@ -256,7 +256,7 @@ int hook1(hook_t *h, void *module_handle)
     int main (int argc, char **argv)
     {
         int l_var = 1;
-        //print_line(" error hello world!");
+        print_line(" error hello world!");
         printf("g_var = %d, l_var = %d.\r\n", g_var, l_var);
         hook(NULL,NULL);
         //error("g_var = %d, l_var = %d.\r\n", g_var, l_var);

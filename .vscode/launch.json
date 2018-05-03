@@ -103,6 +103,27 @@
                     "ignoreFailures": true
                 }
             ]
+        },
+        {
+            "name": "makeCustome32",
+            "preLaunchTask": "makecustome32",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [], // 程序调试时传递给程序的命令行参数，一般设为空即可
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",//64位和32位cygwein分别都要装gdb，64和86两个只要有一个装交叉编译工具链即可(xxx-mingw32-gcc,make)，只有调试分32和64位
+            "miDebuggerPath": "F:\\cygwin86\\bin\\gdb.exe", //但是不能在32位cygwin下使用64位安装的工具链，会报错(如:参数太长之类的)，可能因为缺少依赖
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }

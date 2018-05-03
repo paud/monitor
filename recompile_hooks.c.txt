@@ -1,0 +1,4 @@
+objects/code
+$ i686-w64-mingw32-gcc -c hooks.c -I ../x86/ -I ../../inc/ -I ../../src/bson/
+
+»ª∫ÛºÙ«–µΩobjects/x86/code

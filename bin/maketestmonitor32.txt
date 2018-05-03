@@ -1,0 +1,43 @@
+.SUFFIXES:.c .o .h
+CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
+	-I ../inc/ -I ../objects/code/ -I ../src/bson/ -I ../src/sha1/ -I ../src/capstone/include/ #-mwindows
+LDFLAGS = -lshlwapi -lwsock32 -lgdi32 -fexec-charset=gbk
+
+CC=i686-w64-mingw32-gcc -m32
+
+HOOKSRC = ../objects/code/hooks.c
+HOOKOBJ86 = ../objects/x86/code/hooks.o
+FLAGSRC = ../objects/code/flags.c
+FLAGOBJ86 = ../objects/x86/code/flags.o
+INSNSSRC = ../objects/code/insns.c
+INSNSOBJ86 = ../objects/x86/code/insns.o
+
+SRC = $(wildcard ../src/*.c)
+SRCOBJ86 = $(SRC:%.c=%.o)
+HEADER = $(wildcard ../inc/*.h)
+
+BSON = $(wildcard ../src/bson/*.c)
+BSONOBJ86 = $(BSON:%.c=%.o)
+
+SHA1 = ../src/sha1/sha1.c
+SHA1OBJ86 = ../objects/x86/src/sha1/sha1.o
+
+LIBCAPSTONE86 = ../src/capstone/capstone-x86.lib
+
+BINARIES = testmonitor
+
+all: $(BINARIES)
+	rm -f testmonitor.o
+
+$(INSNSSRC) $(FLAGSRC): $(HOOKSRC)
+
+testmonitor: testmonitor.o $(SRCOBJ86) $(HOOKOBJ86) $(FLAGOBJ86) \
+		$(INSNSOBJ86) $(BSONOBJ86) $(LIBCAPSTONE86) $(SHA1OBJ86)
+	$(CC) -g -o $@ $^ $(CFLAGS) $(LDFLAGS)
+
+%.o: %.c
+	${CC} -c $< -g -o $@ $(CFLAGS) $(LDFLAGS)
+
+clean:
+	rm -rf $(SRCOBJ86) $(BSONOBJ86) 
+

@@ -1,4 +1,4 @@
-CC32 = i686-w64-mingw32-gcc -m32
+CC32 = i686-w64-mingw32-gcc -m32 -g
 CC64 = x86_64-w64-mingw32-gcc -m64
 AR = ar
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
@@ -47,7 +47,7 @@ LIBCAPSTONE64 = src/capstone/capstone-x64.lib
 BINARIES = \
 	bin/inject-x86.exe bin/inject-x64.exe bin/is32bit.exe \
 	bin/monitor-x86.dll bin/monitor-x64.dll
-DEBUG = 1
+#DEBUG = 1
 ifdef DEBUG
 	CFLAGS += -DDEBUG=1 -O0 -ggdb
 	RELMODE = debug

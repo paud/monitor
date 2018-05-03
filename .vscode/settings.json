@@ -12,7 +12,10 @@
         "memory": "c",
         "xmemory": "c",
         "*.rh": "c",
-        "sleep.h": "c"
+        "sleep.h": "c",
+        "type_traits": "c",
+        "xstddef": "c",
+        "xtr1common": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

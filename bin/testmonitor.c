@@ -36,6 +36,171 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDB_TWO 3302
 #define IDB_THREE 3303
 
+static uint32_t _parse_mode(const char *mode)
+{
+    uint32_t ret = HOOK_MODE_ALL;
+    while (*mode != 0)
+    {
+        if (*mode == ' ' || *mode == ',')
+        {
+            mode++;
+            continue;
+        }
+
+        if (*mode >= '0' && *mode <= '9')
+        {
+            ret = strtoul(mode, NULL, 10);
+            break;
+        }
+
+        if (strnicmp(mode, "dumptls", 7) == 0)
+        {
+            ret |= HOOK_MODE_DUMPTLS;
+            mode += 7;
+            continue;
+        }
+
+        if (strnicmp(mode, "iexplore", 8) == 0)
+        {
+            ret |= HOOK_MODE_BROWSER;
+            mode += 8;
+            continue;
+        }
+
+        if (strnicmp(mode, "office", 6) == 0)
+        {
+            ret |= HOOK_MODE_OFFICE | HOOK_MODE_EXPLOIT;
+            mode += 6;
+            continue;
+        }
+
+        if (strnicmp(mode, "pdf", 3) == 0)
+        {
+            ret |= HOOK_MODE_PDF | HOOK_MODE_EXPLOIT;
+            mode += 3;
+            continue;
+        }
+
+        if (strnicmp(mode, "exploit", 7) == 0)
+        {
+            ret |= HOOK_MODE_EXPLOIT;
+            mode += 7;
+            continue;
+        }
+
+        // Report.. find a more proper way? At this point the pipe has not
+        // yet been initialized, so.
+        message_box(NULL, "Invalid Monitor Mode", mode, 0);
+    }
+    return ret;
+}
+char *GetExePath(void)
+{
+    char szFilePath[MAX_PATH + 1] = {0};
+    GetModuleFileNameA(NULL, szFilePath, MAX_PATH);
+    (strrchr(szFilePath, '\\'))[0] = 0; // 删除文件名，只获得路径字串
+    char *path = szFilePath;
+
+    return path;
+}
+void config_read1(config_t *cfg)
+{
+    char buf[512], config_fname[MAX_PATH];
+    char *cwd;
+    //cwd = _getcwd(buf, 512);
+    cwd = GetExePath();
+    strcat(cwd, "\\analyst.cfg");
+    sprintf(config_fname, cwd, GetCurrentProcessId());
+
+    memset(cfg, 0, sizeof(config_t));
+
+    FILE *fp = fopen(config_fname, "rb");
+    if (fp == NULL)
+    {
+        message_box(NULL, "Error fetching configuration file! This is a "
+                          "serious error. If encountered, please notify the Cuckoo "
+                          "Developers as this error prevents analysis.",
+                    "Cuckoo Error", 0);
+        return;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL)
+    {
+        // Cut off the newline.
+        char *p = strchr(buf, '\r');
+        if (p != NULL)
+            *p = 0;
+
+        p = strchr(buf, '\n');
+        if (p != NULL)
+            *p = 0;
+
+        // Split key=value.
+        p = strchr(buf, '=');
+        if (p == NULL)
+            continue;
+
+        *p = 0;
+
+        const char *key = buf, *value = p + 1;
+
+        if (strcmp(key, "pipe") == 0)
+        {
+            strncpy(cfg->pipe_name, value, sizeof(cfg->pipe_name));
+        }
+        else if (strcmp(key, "logpipe") == 0)
+        {
+            strncpy(cfg->logpipe, value, sizeof(cfg->logpipe));
+        }
+        else if (strcmp(key, "shutdown-mutex") == 0)
+        {
+            strncpy(cfg->shutdown_mutex, value, sizeof(cfg->shutdown_mutex));
+        }
+        else if (strcmp(key, "first-process") == 0)
+        {
+            cfg->first_process = value[0] == '1';
+        }
+        else if (strcmp(key, "startup-time") == 0)
+        {
+            cfg->startup_time = strtoul(value, NULL, 10);
+        }
+        else if (strcmp(key, "force-sleepskip") == 0)
+        {
+            cfg->force_sleep_skip = value[0] == '1';
+        }
+        else if (strcmp(key, "hashes-path") == 0)
+        {
+            strncpy(cfg->hashes_path, value, sizeof(cfg->hashes_path));
+        }
+        else if (strcmp(key, "diffing-enable") == 0)
+        {
+            cfg->diffing_enable = value[0] == '1';
+        }
+        else if (strcmp(key, "track") == 0)
+        {
+            cfg->track = value[0] == '1';
+        }
+        else if (strcmp(key, "mode") == 0)
+        {
+            cfg->mode = _parse_mode(value);
+        }
+        else if (strcmp(key, "disguise") == 0)
+        {
+            cfg->disguise = value[0] == '1';
+        }
+        else if (strcmp(key, "pipe-pid") == 0)
+        {
+            cfg->pipe_pid = value[0] == '1';
+        }
+        else if (strcmp(key, "trigger") == 0)
+        {
+            strncpy(cfg->trigger, value, sizeof(cfg->trigger));
+        }
+    }
+    fclose(fp);
+    //DeleteFile(config_fname);
+}
+
 void monitor_init(HMODULE module_handle)
 {
     // Sends crashes to the process rather than showing error popup boxes etc.
@@ -43,7 +208,7 @@ void monitor_init(HMODULE module_handle)
                  SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
     config_t cfg;
-    config_read(&cfg);
+    config_read1(&cfg);
 
     // Required to be initialized before any logging starts.
     mem_init();
@@ -146,12 +311,56 @@ void monitor_unhook(const char *library, void *module_handle)
         }
     }
 }
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved);
+
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
+{
+    (void)hModule;
+    (void)lpReserved;
+
+    if (dwReason == DLL_PROCESS_ATTACH && is_ignored_process() == 0)
+    {
+        monitor_init(hModule);
+        monitor_hook(NULL, NULL);
+        pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
+    }
+
+    return TRUE;
+}
+
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     char szText[] = "hook测试程序！";
     switch (message)
     {
+    case WM_COMMAND:
+    {
+        switch (LOWORD(wParam))
+        {
+        case IDB_TWO:
+        {
+            char buf[512] = {0};
+            DWORD dwSize = 256;
+            GetUserNameA(buf, &dwSize);
+            MessageBox(hwnd, buf, "提示", MB_OK | MB_ICONINFORMATION);
+        }
+        break;
+        case IDB_THREE:
+            MessageBox(hwnd, "您点击了第三个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
+            break;
+        case IDB_ONE:
+        {
+            DWORD h = LoadLibrary("b90042txt.dll"); 
+            //DWORD h = LoadLibrary("advapi32.dll"); //关于系统dll,这里会根据便宜出的PE格式自动调用x64 或 x86的dll
+            //DllMain(hwnd, DLL_PROCESS_ATTACH, NULL);  //从主函数进入跟踪
+            DllMain(h, DLL_PROCESS_ATTACH, NULL);  
+        }
+        //MessageBox(hwnd, "您点击了第一个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
+        break;
+        default:
+            break;
+        }
+    }
+    break;
     case WM_CREATE:
     {
         CreateWindow("Button", "按钮一", WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,
@@ -174,29 +383,6 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         EndPaint(hwnd, &ps);
         return 0;
     }
-    case WM_COMMAND:
-    {
-        switch (LOWORD(wParam))
-        {
-        case IDB_ONE:
-            {
-                //monitor_hook(NULL, NULL);
-                DWORD h=LoadLibrary("user32.dll"); //关于系统dll,这里会根据便宜出的PE格式自动调用x64 或 x86的dll
-                DllMain(h,DLL_PROCESS_ATTACH,NULL);
-            }
-            //MessageBox(hwnd, "您点击了第一个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
-            break;
-        case IDB_TWO:
-            MessageBox(hwnd, "您点击了第二个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
-            break;
-        case IDB_THREE:
-            MessageBox(hwnd, "您点击了第三个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
-            break;
-        default:
-            break;
-        }
-    }
-    break;
     case WM_DESTROY: // 正在销毁窗口
 
         // 向消息队列投递一个WM_QUIT消息，促使GetMessage函数返回0，结束消息循环
@@ -235,18 +421,18 @@ BOOL APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
     // 创建主窗口
     HWND hwnd = CreateWindowEx(
-        0,                   // dwExStyle，扩展样式
-        szClassName,         // lpClassName，类名
-        "My hook test Window!",  // lpWindowName，标题
-        WS_OVERLAPPEDWINDOW, // dwStyle，窗口风格
-        CW_USEDEFAULT,       // X，初始 X 坐标
-        CW_USEDEFAULT,       // Y，初始 Y 坐标
-        CW_USEDEFAULT,       // nWidth，宽度
-        CW_USEDEFAULT,       // nHeight，高度
-        NULL,                // hWndParent，父窗口句柄
-        NULL,                // hMenu，菜单句柄
-        hInstance,           // hlnstance，程序实例句柄
-        NULL);               // lpParam，用户数据
+        0,                      // dwExStyle，扩展样式
+        szClassName,            // lpClassName，类名
+        "My hook test Window!", // lpWindowName，标题
+        WS_OVERLAPPEDWINDOW,    // dwStyle，窗口风格
+        CW_USEDEFAULT,          // X，初始 X 坐标
+        CW_USEDEFAULT,          // Y，初始 Y 坐标
+        CW_USEDEFAULT,          // nWidth，宽度
+        CW_USEDEFAULT,          // nHeight，高度
+        NULL,                   // hWndParent，父窗口句柄
+        NULL,                   // hMenu，菜单句柄
+        hInstance,              // hlnstance，程序实例句柄
+        NULL);                  // lpParam，用户数据
 
     if (hwnd == NULL)
     {
@@ -270,17 +456,4 @@ BOOL APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 
     // 当GetMessage返回0时程序结束
     return msg.wParam;
-}
-
-BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
-{
-    (void) hModule; (void) lpReserved;
-
-    if(dwReason == DLL_PROCESS_ATTACH && is_ignored_process() == 0) {
-        monitor_init(hModule);
-        monitor_hook(NULL, NULL);
-        pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
-    }
-
-    return TRUE;
 }

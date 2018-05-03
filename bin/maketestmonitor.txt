@@ -56,3 +56,6 @@ testmonitor: testmonitor.o $(SRCOBJ64) $(HOOKOBJ64) $(FLAGOBJ64) \
 %.o: %.c
 	${CC} -c $< -g -o $@ $(CFLAGS) $(LDFLAGS)
 
+clean:
+	rm -rf $(SRCOBJ64) $(BSONOBJ64)
+
