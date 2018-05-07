@@ -257,7 +257,7 @@ void monitor_init(HMODULE module_handle)
 
     misc_set_monitor_options(cfg.track, cfg.mode, cfg.trigger);
 }
-
+int hookcount=0;
 void monitor_hook(const char *library, void *module_handle)
 {
     // Initialize data about each hook.
@@ -283,8 +283,31 @@ void monitor_hook(const char *library, void *module_handle)
         // already have been loaded. In that case we want to hook the function
         // forwarder right away. (Note that the library member of the hook
         // object is updated in the case of retrying).
-        while (hook(h, module_handle) == 1)
+        if (strstr(h->funcname, "memcpy"))
+        {
+            MessageBox(0,"before memcpy","info",MB_OK);
+            while (hook(h, module_handle) == 1)
             ;
+            MessageBox(0,"after memcpy","info",MB_OK);
+        }
+        else
+        {
+            while (hook(h, module_handle) == 1)
+                ;
+        }
+        hookcount++;
+        char a[512] = {0};
+        char b[4]={0};
+        itoa(hookcount,b,10);
+        strcat(a, b);
+        strcat(a, ":");
+        strcat(a, h->library);
+        strcat(a, "!");
+        strcat(a, h->funcname);
+        log_action(a);
+        //if (hookcount==30){
+            //MessageBox(0,a,"info",MB_OK);
+        //}
     }
 }
 
@@ -345,14 +368,22 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         }
         break;
         case IDB_THREE:
-            MessageBox(hwnd, "您点击了第三个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
-            break;
+        {
+            char *a = "WSAAccept";
+            char d[20];
+            memcpy(d, a, strlen(a));
+            if (strstr(a, "WSA1"))
+            {
+                MessageBox(hwnd, "您点击了第三个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
+            }
+        }
+        break;
         case IDB_ONE:
         {
-            DWORD h = LoadLibrary("b90042txt.dll"); 
+            DWORD h = LoadLibrary("b90042txt.dll");
             //DWORD h = LoadLibrary("advapi32.dll"); //关于系统dll,这里会根据便宜出的PE格式自动调用x64 或 x86的dll
             //DllMain(hwnd, DLL_PROCESS_ATTACH, NULL);  //从主函数进入跟踪
-            DllMain(h, DLL_PROCESS_ATTACH, NULL);  
+            DllMain(h, DLL_PROCESS_ATTACH, NULL);
         }
         //MessageBox(hwnd, "您点击了第一个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
         break;

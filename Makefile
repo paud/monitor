@@ -47,7 +47,7 @@ LIBCAPSTONE64 = src/capstone/capstone-x64.lib
 BINARIES = \
 	bin/inject-x86.exe bin/inject-x64.exe bin/is32bit.exe \
 	bin/monitor-x86.dll bin/monitor-x64.dll
-#DEBUG = 1
+# DEBUG = 1
 ifdef DEBUG
 	CFLAGS += -DDEBUG=1 -O0 -ggdb
 	RELMODE = debug
@@ -62,8 +62,11 @@ endif
 
 all: $(BINARIES)
 
+#NOPYTHON=1
+ifndef NOPYTHON
 $(HOOKSRC): $(SIGS) $(FLAGS) $(JINJA2) $(HOOKREQ) $(YAML)
 	python2  utils/process.py $(RELMODE) --apis=$(APIS)
+endif
 
 $(INSNSSRC) $(FLAGSRC): $(HOOKSRC)
 
