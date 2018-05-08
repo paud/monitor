@@ -15,7 +15,8 @@
         "sleep.h": "c",
         "type_traits": "c",
         "xstddef": "c",
-        "xtr1common": "c"
+        "xtr1common": "c",
+        "xmemory0": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

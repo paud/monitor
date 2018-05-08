@@ -11,10 +11,10 @@ int main(void)
   size_t count;
   //printf("helo!");
  
-  if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK)
+  if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) != CS_ERR_OK)
      return -1;
   int l=sizeof(CODE)-1;
-  count = cs_disasm(handle, CODE, l, 0, 0, &insn);
+  count = cs_disasm(handle, CODE, l, 0x1000, 0, &insn);
   if (count > 0) {
       size_t j;
       for (j = 0; j < count; j++) {
