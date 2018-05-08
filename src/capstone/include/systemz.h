@@ -8,7 +8,10 @@
 extern "C" {
 #endif
 
+#if !defined(_MSC_VER) || !defined(_KERNEL_MODE)
 #include <stdint.h>
+#endif
+
 #include "platform.h"
 
 #ifdef _MSC_VER
@@ -37,11 +40,11 @@ typedef enum sysz_cc {
 
 //> Operand type for instruction's operands
 typedef enum sysz_op_type {
-	SYSZ_OP_INVALID = 0,	// Uninitialized.
-	SYSZ_OP_REG,	// Register operand.
-	SYSZ_OP_ACREG,	// Access register operand.
-	SYSZ_OP_IMM,	// Immediate operand.
-	SYSZ_OP_MEM,	// Memory operand
+	SYSZ_OP_INVALID = 0, // = CS_OP_INVALID (Uninitialized).
+	SYSZ_OP_REG, // = CS_OP_REG (Register operand).
+	SYSZ_OP_IMM, // = CS_OP_IMM (Immediate operand).
+	SYSZ_OP_MEM, // = CS_OP_MEM (Memory operand).
+	SYSZ_OP_ACREG = 64,	// Access register operand.
 } sysz_op_type;
 
 // Instruction's operand referring to memory
@@ -112,7 +115,7 @@ typedef enum sysz_reg {
 
 	SYSZ_REG_R0L,
 
-	SYSZ_REG_MAX,
+	SYSZ_REG_ENDING,
 } sysz_reg;
 
 //> SystemZ instruction
@@ -547,11 +550,14 @@ typedef enum sysz_insn {
 	SYSZ_INS_LDGR,
 	SYSZ_INS_LDR,
 	SYSZ_INS_LDXBR,
+	SYSZ_INS_LDXBRA,
 	SYSZ_INS_LDY,
 	SYSZ_INS_LE,
 	SYSZ_INS_LEDBR,
+	SYSZ_INS_LEDBRA,
 	SYSZ_INS_LER,
 	SYSZ_INS_LEXBR,
+	SYSZ_INS_LEXBRA,
 	SYSZ_INS_LEY,
 	SYSZ_INS_LFH,
 	SYSZ_INS_LG,
@@ -797,21 +803,26 @@ typedef enum sysz_insn {
 	SYSZ_INS_XR,
 	SYSZ_INS_XRK,
 	SYSZ_INS_XY,
-	SYSZ_INS_MAX,   // <-- mark the end of the list of instructions
+
+	SYSZ_INS_ENDING,   // <-- mark the end of the list of instructions
 } sysz_insn;
 
 //> Group of SystemZ instructions
 typedef enum sysz_insn_group {
-	SYSZ_GRP_INVALID = 0,
-	SYSZ_GRP_FEATUREDISTINCTOPS,
-	SYSZ_GRP_FEATUREFPEXTENSION,
-	SYSZ_GRP_FEATUREHIGHWORD,
-	SYSZ_GRP_FEATUREINTERLOCKEDACCESS1,
-	SYSZ_GRP_FEATURELOADSTOREONCOND,
+	SYSZ_GRP_INVALID = 0, // = CS_GRP_INVALID
 
-	SYSZ_GRP_JUMP,	// all jump instructions (conditional+direct+indirect jumps)
+	//> Generic groups
+	// all jump instructions (conditional+direct+indirect jumps)
+	SYSZ_GRP_JUMP,	// = CS_GRP_JUMP
 
-	SYSZ_GRP_MAX,   // <-- mark the end of the list of groups
+	//> Architecture-specific groups
+	SYSZ_GRP_DISTINCTOPS = 128,
+	SYSZ_GRP_FPEXTENSION,
+	SYSZ_GRP_HIGHWORD,
+	SYSZ_GRP_INTERLOCKEDACCESS1,
+	SYSZ_GRP_LOADSTOREONCOND,
+
+	SYSZ_GRP_ENDING,   // <-- mark the end of the list of groups
 } sysz_insn_group;
 
 #ifdef __cplusplus

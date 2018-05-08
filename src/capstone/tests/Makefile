@@ -25,7 +25,7 @@ CC = $(CROSS)gcc
 endif
 
 
-CFLAGS += -O3 -Wall -I$(INCDIR)
+CFLAGS += -Wall -I$(INCDIR)
 LDFLAGS += -L$(LIBDIR)
 
 CFLAGS += $(foreach arch,$(LIBARCHS),-arch $(arch))
@@ -64,7 +64,7 @@ endif
 
 .PHONY: all clean
 
-SOURCES = test.c test_detail.c test_skipdata.c
+SOURCES = test_basic.c test_detail.c test_skipdata.c test_iter.c
 ifneq (,$(findstring arm,$(CAPSTONE_ARCHS)))
 SOURCES += test_arm.c
 endif

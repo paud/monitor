@@ -19,7 +19,7 @@
 #include <stdio.h>	// DEBUG
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h> 
+#include <platform.h>
 
 #include "ARMInstPrinter.h"
 #include "ARMAddressingModes.h"
@@ -49,7 +49,6 @@ static void printAM2PreOrOffsetIndexOp(MCInst *MI, unsigned OpNum, SStream *O);
 static void printAddrMode2OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O);
 static void printAddrMode3Operand(MCInst *MI, unsigned OpNum, SStream *O, bool AlwaysPrintImm0);
 static void printAddrMode3OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O);
-static void printAM3PostIndexOp(MCInst *MI, unsigned Op, SStream *O);
 static void printAM3PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O, bool AlwaysPrintImm0);
 static void printPostIdxImm8Operand(MCInst *MI, unsigned OpNum, SStream *O);
 static void printPostIdxRegOperand(MCInst *MI, unsigned OpNum, SStream *O);
@@ -155,10 +154,13 @@ static void op_addImm(MCInst *MI, int v)
 
 void ARM_getRegName(cs_struct *handle, int value)
 {
-	if (value == CS_OPT_SYNTAX_NOREGNAME)
+	if (value == CS_OPT_SYNTAX_NOREGNAME) {
 		handle->get_regname = getRegisterName2;
-	else
+		handle->reg_name = ARM_reg_name2;;
+	} else {
 		handle->get_regname = getRegisterName;
+		handle->reg_name = ARM_reg_name;;
+	}
 }
 
 /// translateShiftImm - Convert shift immediate from 0-31 to 1-32 for printing.
@@ -183,10 +185,10 @@ static void printRegImmShift(MCInst *MI, SStream *O, ARM_AM_ShiftOpc ShOpc, unsi
 	//assert (!(ShOpc == ARM_AM_ror && !ShImm) && "Cannot have ror #0");
 	SStream_concat0(O, ARM_AM_getShiftOpcStr(ShOpc));
 	if (MI->csh->detail) {
-			if (MI->csh->doing_mem)
-				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].shift.type = (arm_shifter)ShOpc;
-			else
-				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count - 1].shift.type = (arm_shifter)ShOpc;
+		if (MI->csh->doing_mem)
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].shift.type = (arm_shifter)ShOpc;
+		else
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count - 1].shift.type = (arm_shifter)ShOpc;
 	}
 
 	if (ShOpc != ARM_AM_rrx) {
@@ -208,7 +210,7 @@ static void printRegName(cs_struct *h, SStream *OS, unsigned RegNo)
 #endif
 }
 
-static name_map insn_update_flgs[] = {
+static const name_map insn_update_flgs[] = {
 	{ ARM_INS_CMN, "cmn" },
 	{ ARM_INS_CMP, "cmp" },
 	{ ARM_INS_TEQ, "teq" },
@@ -238,6 +240,8 @@ static name_map insn_update_flgs[] = {
 	{ ARM_INS_SUB, "subs" },
 	{ ARM_INS_UMLAL, "umlals" },
 	{ ARM_INS_UMULL, "umulls" },
+
+	{ ARM_INS_UADD8, "uadd8" },
 };
 
 void ARM_post_printer(csh ud, cs_insn *insn, char *insn_asm, MCInst *mci)
@@ -246,8 +250,113 @@ void ARM_post_printer(csh ud, cs_insn *insn, char *insn_asm, MCInst *mci)
 		return;
 
 	// check if this insn requests write-back
-	if (strrchr(insn_asm, '!') != NULL) {
+	if (mci->writeback || (strrchr(insn_asm, '!')) != NULL) {
 		insn->detail->arm.writeback = true;
+	} else if (mci->csh->mode & CS_MODE_THUMB) {
+		// handle some special instructions with writeback
+        //printf(">> Opcode = %u\n", mci->Opcode);
+		switch(mci->Opcode) {
+			default:
+				break;
+			case ARM_t2LDC2L_PRE:
+			case ARM_t2LDC2_PRE:
+			case ARM_t2LDCL_PRE:
+			case ARM_t2LDC_PRE:
+
+			case ARM_t2LDRB_PRE:
+			case ARM_t2LDRD_PRE:
+			case ARM_t2LDRH_PRE:
+			case ARM_t2LDRSB_PRE:
+			case ARM_t2LDRSH_PRE:
+			case ARM_t2LDR_PRE:
+
+			case ARM_t2STC2L_PRE:
+			case ARM_t2STC2_PRE:
+			case ARM_t2STCL_PRE:
+			case ARM_t2STC_PRE:
+
+			case ARM_t2STRB_PRE:
+			case ARM_t2STRD_PRE:
+			case ARM_t2STRH_PRE:
+			case ARM_t2STR_PRE:
+
+			case ARM_t2LDC2L_POST:
+			case ARM_t2LDC2_POST:
+			case ARM_t2LDCL_POST:
+			case ARM_t2LDC_POST:
+
+			case ARM_t2LDRB_POST:
+			case ARM_t2LDRD_POST:
+			case ARM_t2LDRH_POST:
+			case ARM_t2LDRSB_POST:
+			case ARM_t2LDRSH_POST:
+			case ARM_t2LDR_POST:
+
+			case ARM_t2STC2L_POST:
+			case ARM_t2STC2_POST:
+			case ARM_t2STCL_POST:
+			case ARM_t2STC_POST:
+
+			case ARM_t2STRB_POST:
+			case ARM_t2STRD_POST:
+			case ARM_t2STRH_POST:
+			case ARM_t2STR_POST:
+				insn->detail->arm.writeback = true;
+				break;
+		}
+	} else {	// ARM mode
+		// handle some special instructions with writeback
+        //printf(">> Opcode = %u\n", mci->Opcode);
+		switch(mci->Opcode) {
+			default:
+				break;
+			case ARM_LDC2L_PRE:
+			case ARM_LDC2_PRE:
+			case ARM_LDCL_PRE:
+			case ARM_LDC_PRE:
+
+			case ARM_LDRD_PRE:
+			case ARM_LDRH_PRE:
+			case ARM_LDRSB_PRE:
+			case ARM_LDRSH_PRE:
+
+			case ARM_STC2L_PRE:
+			case ARM_STC2_PRE:
+			case ARM_STCL_PRE:
+			case ARM_STC_PRE:
+
+			case ARM_STRD_PRE:
+			case ARM_STRH_PRE:
+
+			case ARM_LDC2L_POST:
+			case ARM_LDC2_POST:
+			case ARM_LDCL_POST:
+			case ARM_LDC_POST:
+
+			case ARM_LDRBT_POST:
+			case ARM_LDRD_POST:
+			case ARM_LDRH_POST:
+			case ARM_LDRSB_POST:
+			case ARM_LDRSH_POST:
+
+			case ARM_STC2L_POST:
+			case ARM_STC2_POST:
+			case ARM_STCL_POST:
+			case ARM_STC_POST:
+
+			case ARM_STRBT_POST:
+			case ARM_STRD_POST:
+			case ARM_STRH_POST:
+
+			case ARM_LDRB_POST_IMM:
+			case ARM_LDR_POST_IMM:
+			case ARM_LDR_POST_REG:
+			case ARM_STRB_POST_IMM:
+			case ARM_STR_POST_IMM:
+
+				insn->detail->arm.writeback = true;
+				break;
+		}
 	}
 
 	// check if this insn requests update flags
@@ -296,7 +405,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 {
 	MCRegisterInfo *MRI = (MCRegisterInfo *)Info;
 
-	unsigned Opcode = MCInst_getOpcode(MI), tmp, i;
+	unsigned Opcode = MCInst_getOpcode(MI), tmp, i, pubOpcode;
 
 	switch(Opcode) {
 		// Check for HINT instructions w/ canonical names.
@@ -304,21 +413,18 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 		case ARM_tHINT:
 		case ARM_t2HINT:
 			switch (MCOperand_getImm(MCInst_getOperand(MI, 0))) {
-				case 0: SStream_concat0(O, "nop"); break;
-				case 1: SStream_concat0(O, "yield"); break;
-				case 2: SStream_concat0(O, "wfe"); break;
-				case 3: SStream_concat0(O, "wfi"); break;
-				case 4: SStream_concat0(O, "sev"); break;
+				case 0: SStream_concat0(O, "nop"); pubOpcode = ARM_INS_NOP; break;
+				case 1: SStream_concat0(O, "yield"); pubOpcode = ARM_INS_YIELD; break;
+				case 2: SStream_concat0(O, "wfe"); pubOpcode = ARM_INS_WFE; break;
+				case 3: SStream_concat0(O, "wfi"); pubOpcode = ARM_INS_WFI; break;
+				case 4: SStream_concat0(O, "sev"); pubOpcode = ARM_INS_SEV; break;
 				case 5:
-						// FIXME: HasV80Ops becomes a mode
-						//if ((ARM_getFeatureBits(MI->csh->mode) & ARM_HasV8Ops)) {
-						//	SStream_concat0(O, "sevl");
-						//	break;
-						//}
+						if ((ARM_getFeatureBits(MI->csh->mode) & ARM_HasV8Ops)) {
+							SStream_concat0(O, "sevl");
+							pubOpcode = ARM_INS_SEVL;
+							break;
+						}
 						// Fallthrough for non-v8
-
-						SStream_concat0(O, "sevl");
-						break;
 				default:
 						// Anything else should just print normally.
 						printInstruction(MI, O, MRI);
@@ -326,7 +432,10 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 			}
 			printPredicateOperand(MI, 1, O);
 			if (Opcode == ARM_t2HINT)
-				SStream_concat0(O, ".w");	// FIXME: expose this in register-size of insn?
+				SStream_concat0(O, ".w");
+
+			MCInst_setOpcodePub(MI, pubOpcode);
+
 			return;
 
 			// Check for MOVs and print canonical forms, instead.
@@ -421,6 +530,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 								MCInst_getNumOperands(MI) > 5) {
 							// Should only print PUSH if there are at least two registers in the list.
 							SStream_concat0(O, "push");
+							MCInst_setOpcodePub(MI, ARM_INS_PUSH);
 							printPredicateOperand(MI, 2, O);
 							if (Opcode == ARM_t2STMDB_UPD)
 								SStream_concat0(O, ".w");
@@ -434,6 +544,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 						if (MCOperand_getReg(MCInst_getOperand(MI, 2)) == ARM_SP &&
 								MCOperand_getImm(MCInst_getOperand(MI, 3)) == -4) {
 							SStream_concat0(O, "push");
+							MCInst_setOpcodePub(MI, ARM_INS_PUSH);
 							printPredicateOperand(MI, 4, O);
 							SStream_concat0(O, "\t{");
 							printRegName(MI->csh, O, MCOperand_getReg(MCInst_getOperand(MI, 1)));
@@ -454,6 +565,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 								MCInst_getNumOperands(MI) > 5) {
 							// Should only print POP if there are at least two registers in the list.
 							SStream_concat0(O, "pop");
+							MCInst_setOpcodePub(MI, ARM_INS_POP);
 							printPredicateOperand(MI, 2, O);
 							if (Opcode == ARM_t2LDMIA_UPD)
 								SStream_concat0(O, ".w");
@@ -464,19 +576,29 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 						break;
 
 		case ARM_LDR_POST_IMM:
-						if (MCOperand_getReg(MCInst_getOperand(MI, 2)) == ARM_SP &&
-								MCOperand_getImm(MCInst_getOperand(MI, 4)) == 4) {
-							SStream_concat0(O, "pop");
-							printPredicateOperand(MI, 5, O);
-							SStream_concat0(O, "\t{");
-							printRegName(MI->csh, O, MCOperand_getReg(MCInst_getOperand(MI, 0)));
-							if (MI->csh->detail) {
-								MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
-								MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = MCOperand_getReg(MCInst_getOperand(MI, 0));
-								MI->flat_insn->detail->arm.op_count++;
+						if (MCOperand_getReg(MCInst_getOperand(MI, 2)) == ARM_SP) {
+							MCOperand *MO2 = MCInst_getOperand(MI, 4);
+							if ((getAM2Op((unsigned int)MCOperand_getImm(MO2)) == ARM_AM_add &&
+										getAM2Offset((unsigned int)MCOperand_getImm(MO2)) == 4) ||
+									MCOperand_getImm(MO2) == 4) {
+								SStream_concat0(O, "pop");
+								MCInst_setOpcodePub(MI, ARM_INS_POP);
+								printPredicateOperand(MI, 5, O);
+								SStream_concat0(O, "\t{");
+								printRegName(MI->csh, O, MCOperand_getReg(MCInst_getOperand(MI, 0)));
+								if (MI->csh->detail) {
+									MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
+									MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = MCOperand_getReg(MCInst_getOperand(MI, 0));
+									MI->flat_insn->detail->arm.op_count++;
+                                    // this instruction implicitly read/write SP register
+                                    MI->flat_insn->detail->regs_read[MI->flat_insn->detail->regs_read_count] = ARM_REG_SP;
+                                    MI->flat_insn->detail->regs_read_count++;
+                                    MI->flat_insn->detail->regs_write[MI->flat_insn->detail->regs_write_count] = ARM_REG_SP;
+                                    MI->flat_insn->detail->regs_write_count++;
+								}
+								SStream_concat0(O, "}");
+								return;
 							}
-							SStream_concat0(O, "}");
-							return;
 						}
 						break;
 
@@ -485,6 +607,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 		case ARM_VSTMDDB_UPD:
 						if (MCOperand_getReg(MCInst_getOperand(MI, 0)) == ARM_SP) {
 							SStream_concat0(O, "vpush");
+							MCInst_setOpcodePub(MI, ARM_INS_VPUSH);
 							printPredicateOperand(MI, 2, O);
 							SStream_concat0(O, "\t");
 							printRegisterList(MI, 4, O);
@@ -497,6 +620,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 		case ARM_VLDMDIA_UPD:
 						if (MCOperand_getReg(MCInst_getOperand(MI, 0)) == ARM_SP) {
 							SStream_concat0(O, "vpop");
+							MCInst_setOpcodePub(MI, ARM_INS_VPOP);
 							printPredicateOperand(MI, 2, O);
 							SStream_concat0(O, "\t");
 							printRegisterList(MI, 4, O);
@@ -505,7 +629,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 						break;
 
 		case ARM_tLDMIA: {
-							 bool Writeback = true;	// FIXME: expose this
+							 bool Writeback = true;
 							 unsigned BaseReg = MCOperand_getReg(MCInst_getOperand(MI, 0));
 							 unsigned i;
 							 for (i = 3; i < MCInst_getNumOperands(MI); ++i) {
@@ -514,6 +638,7 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 							 }
 
 							 SStream_concat0(O, "ldm");
+							 MCInst_setOpcodePub(MI, ARM_INS_LDM);
 
 							 printPredicateOperand(MI, 1, O);
 							 SStream_concat0(O, "\t");
@@ -523,8 +648,10 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 								 MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = BaseReg;
 								 MI->flat_insn->detail->arm.op_count++;
 							 }
-							 if (Writeback)
+							 if (Writeback) {
+								 MI->writeback = true;
 								 SStream_concat0(O, "!");
+							 }
 							 SStream_concat0(O, ", ");
 							 printRegisterList(MI, 3, O);
 							 return;
@@ -540,30 +667,30 @@ void ARM_printInst(MCInst *MI, SStream *O, void *Info)
 		case ARM_STREXD:
 		case ARM_LDAEXD:
 		case ARM_STLEXD: {
-				    MCRegisterClass* MRC = MCRegisterInfo_getRegClass(MRI, ARM_GPRRegClassID);
-				    bool isStore = Opcode == ARM_STREXD || Opcode == ARM_STLEXD;
+				const MCRegisterClass* MRC = MCRegisterInfo_getRegClass(MRI, ARM_GPRRegClassID);
+				bool isStore = Opcode == ARM_STREXD || Opcode == ARM_STLEXD;
 
-				    unsigned Reg = MCOperand_getReg(MCInst_getOperand(MI, isStore ? 1 : 0));
-				    if (MCRegisterClass_contains(MRC, Reg)) {
-						MCInst NewMI;
+				unsigned Reg = MCOperand_getReg(MCInst_getOperand(MI, isStore ? 1 : 0));
+				if (MCRegisterClass_contains(MRC, Reg)) {
+				    MCInst NewMI;
 
-						MCInst_Init(&NewMI);
-						MCInst_setOpcode(&NewMI, Opcode);
+				    MCInst_Init(&NewMI);
+				    MCInst_setOpcode(&NewMI, Opcode);
 
-						if (isStore)
-							MCInst_addOperand2(&NewMI, MCInst_getOperand(MI, 0));
+				    if (isStore)
+						MCInst_addOperand2(&NewMI, MCInst_getOperand(MI, 0));
 
-						MCOperand_CreateReg0(&NewMI, MCRegisterInfo_getMatchingSuperReg(MRI, Reg, ARM_gsub_0,
-									MCRegisterInfo_getRegClass(MRI, ARM_GPRPairRegClassID)));
+				    MCOperand_CreateReg0(&NewMI, MCRegisterInfo_getMatchingSuperReg(MRI, Reg, ARM_gsub_0,
+								MCRegisterInfo_getRegClass(MRI, ARM_GPRPairRegClassID)));
 
-						// Copy the rest operands into NewMI.
-						for(i = isStore ? 3 : 2; i < MCInst_getNumOperands(MI); ++i)
-							MCInst_addOperand2(&NewMI, MCInst_getOperand(MI, i));
+				    // Copy the rest operands into NewMI.
+				    for(i = isStore ? 3 : 2; i < MCInst_getNumOperands(MI); ++i)
+						MCInst_addOperand2(&NewMI, MCInst_getOperand(MI, i));
 
-						printInstruction(&NewMI, O, MRI);
-				   	 return;
-				    }
+				    printInstruction(&NewMI, O, MRI);
+				    return;
 				}
+		 }
 	}
 
 	//if (printAliasInstr(MI, O, MRI))
@@ -591,6 +718,8 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 			}
 		}
 	} else if (MCOperand_isImm(Op)) {
+		unsigned int opc = MCInst_getOpcode(MI);
+
 		imm = (int32_t)MCOperand_getImm(Op);
 
 		// relative branch only has relative offset, so we have to update it
@@ -598,34 +727,56 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 		// Note: in ARM, PC is always 2 instructions ahead, so we have to
 		// add 8 in ARM mode, or 4 in Thumb mode
 		// printf(">> opcode: %u\n", MCInst_getOpcode(MI));
-		if (ARM_rel_branch(MI->csh, MCInst_getOpcode(MI))) {
-			// only do this for relative branch
-			if (MI->csh->mode & CS_MODE_THUMB)
-				imm += (int32_t)MI->address + 4;
-			else
-				imm += (int32_t)MI->address + 8;
+		if (ARM_rel_branch(MI->csh, opc)) {
+			uint32_t address;
 
-			if (imm >= 0) {
-				if (imm > HEX_THRESHOLD)
-					SStream_concat(O, "#0x%x", imm);
-				else
-					SStream_concat(O, "#%u", imm);
+			// only do this for relative branch
+			if (MI->csh->mode & CS_MODE_THUMB) {
+				address = (uint32_t)MI->address + 4;
+				if (ARM_blx_to_arm_mode(MI->csh, opc)) {
+					// here need to align down to the nearest 4-byte address
+#define _ALIGN_DOWN(v, align_width) ((v/align_width)*align_width)
+					address = _ALIGN_DOWN(address, 4);
+#undef _ALIGN_DOWN
+				}
 			} else {
-				if (imm < -HEX_THRESHOLD)
-					SStream_concat(O, "#-0x%x", -imm);
-				else
-					SStream_concat(O, "#-%u", -imm);
+				address = (uint32_t)MI->address + 8;
 			}
-		} else if (imm >= 0) {
+
+			imm += address;
+
 			if (imm > HEX_THRESHOLD)
 				SStream_concat(O, "#0x%x", imm);
 			else
 				SStream_concat(O, "#%u", imm);
 		} else {
-			if (imm < -HEX_THRESHOLD)
-				SStream_concat(O, "#-0x%x", -imm);
-			else
-				SStream_concat(O, "#-%u", -imm);
+			switch(MI->flat_insn->id) {
+				default:
+					if (imm >= 0) {
+						if (imm > HEX_THRESHOLD)
+							SStream_concat(O, "#0x%x", imm);
+						else
+							SStream_concat(O, "#%u", imm);
+					} else {
+						if (imm < -HEX_THRESHOLD)
+							// cast first, then negate
+							SStream_concat(O, "#-0x%x", -(uint32_t)imm);
+						else
+							SStream_concat(O, "#-%u", -imm);
+					}
+					break;
+				case ARM_INS_AND:
+				case ARM_INS_ORR:
+				case ARM_INS_EOR:
+				case ARM_INS_BIC:
+				case ARM_INS_MVN:
+					// do not print number in negative form
+					if (imm >= 0 && imm <= HEX_THRESHOLD)
+						SStream_concat(O, "#%u", imm);
+					else
+						SStream_concat(O, "#0x%x", imm);
+					break;
+			}
 		}
 
 		if (MI->csh->detail) {
@@ -738,6 +889,7 @@ static void printAM2PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O)
 	MCOperand *MO1 = MCInst_getOperand(MI, Op);
 	MCOperand *MO2 = MCInst_getOperand(MI, Op + 1);
 	MCOperand *MO3 = MCInst_getOperand(MI, Op + 2);
+	ARM_AM_AddrOpc subtracted = getAM2Op((unsigned int)MCOperand_getImm(MO3));
 
 	SStream_concat0(O, "[");
 	set_mem_access(MI, true);
@@ -750,14 +902,17 @@ static void printAM2PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O)
 	if (!MCOperand_getReg(MO2)) {
 		unsigned tmp = getAM2Offset((unsigned int)MCOperand_getImm(MO3));
 		if (tmp) { // Don't print +0.
+			subtracted = getAM2Op((unsigned int)MCOperand_getImm(MO3));
+
 			SStream_concat0(O, ", ");
 			if (tmp > HEX_THRESHOLD)
-				SStream_concat(O, "#%s0x%x", ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO3))), tmp);
+				SStream_concat(O, "#%s0x%x", ARM_AM_getAddrOpcStr(subtracted), tmp);
 			else
-				SStream_concat(O, "#%s%u", ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO3))), tmp);
+				SStream_concat(O, "#%s%u", ARM_AM_getAddrOpcStr(subtracted), tmp);
 			if (MI->csh->detail) {
 				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].shift.type = (arm_shifter)getAM2Op((unsigned int)MCOperand_getImm(MO3));
 				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].shift.value = tmp;
+				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = subtracted == ARM_AM_sub;
 			}
 		}
 		SStream_concat0(O, "]");
@@ -766,10 +921,11 @@ static void printAM2PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O)
 	}
 
 	SStream_concat0(O, ", ");
-	SStream_concat0(O, ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO3))));
+	SStream_concat0(O, ARM_AM_getAddrOpcStr(subtracted));
 	printRegName(MI->csh, O, MCOperand_getReg(MO2));
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.index = MCOperand_getReg(MO2);
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = subtracted == ARM_AM_sub;
 	}
 
 	printRegImmShift(MI, O, getAM2ShiftOpc((unsigned int)MCOperand_getImm(MO3)),
@@ -832,28 +988,31 @@ static void printAddrMode2OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *MO1 = MCInst_getOperand(MI, OpNum);
 	MCOperand *MO2 = MCInst_getOperand(MI, OpNum+1);
+	ARM_AM_AddrOpc subtracted = getAM2Op((unsigned int)MCOperand_getImm(MO2));
 
 	if (!MCOperand_getReg(MO1)) {
 		unsigned ImmOffs = getAM2Offset((unsigned int)MCOperand_getImm(MO2));
 		if (ImmOffs > HEX_THRESHOLD)
 			SStream_concat(O, "#%s0x%x",
-					ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO2))), ImmOffs);
+					ARM_AM_getAddrOpcStr(subtracted), ImmOffs);
 		else
 			SStream_concat(O, "#%s%u",
-					ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO2))), ImmOffs);
+					ARM_AM_getAddrOpcStr(subtracted), ImmOffs);
 		if (MI->csh->detail) {
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = ImmOffs;
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = subtracted == ARM_AM_sub;
 			MI->flat_insn->detail->arm.op_count++;
 		}
 		return;
 	}
 
-	SStream_concat0(O, ARM_AM_getAddrOpcStr(getAM2Op((unsigned int)MCOperand_getImm(MO2))));
+	SStream_concat0(O, ARM_AM_getAddrOpcStr(subtracted));
 	printRegName(MI->csh, O, MCOperand_getReg(MO1));
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = MCOperand_getReg(MO1);
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = subtracted == ARM_AM_sub;
 		MI->flat_insn->detail->arm.op_count++;
 	}
 
@@ -865,58 +1024,13 @@ static void printAddrMode2OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O)
 // Addressing Mode #3
 //===--------------------------------------------------------------------===//
 
-static void printAM3PostIndexOp(MCInst *MI, unsigned Op, SStream *O)
-{
-	MCOperand *MO1 = MCInst_getOperand(MI, Op);
-	MCOperand *MO2 = MCInst_getOperand(MI, Op+1);
-	MCOperand *MO3 = MCInst_getOperand(MI, Op+2);
-	ARM_AM_AddrOpc op = getAM3Op((unsigned int)MCOperand_getImm(MO3));
-	unsigned ImmOffs;
-
-	SStream_concat0(O, "[");
-	set_mem_access(MI, true);
-	printRegName(MI->csh, O, MCOperand_getReg(MO1));
-	if (MI->csh->detail)
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.base = MCOperand_getReg(MO1);
-	SStream_concat0(O, "], ");
-	set_mem_access(MI, false);
-
-	if (MCOperand_getReg(MO2)) {
-		SStream_concat(O, "%c", (char)op);
-		printRegName(MI->csh, O, MCOperand_getReg(MO2));
-		if (MI->csh->detail) {
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = MCOperand_getReg(MO2);
-			MI->flat_insn->detail->arm.op_count++;
-		}
-		return;
-	}
-
-	ImmOffs = getAM3Offset((unsigned int)MCOperand_getImm(MO3));
-	if (ImmOffs > HEX_THRESHOLD)
-		SStream_concat(O, "#%s0x%x", ARM_AM_getAddrOpcStr(op), ImmOffs);
-	else
-		SStream_concat(O, "#%s%u", ARM_AM_getAddrOpcStr(op), ImmOffs);
-
-	if (MI->csh->detail) {
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
-
-		if (op)
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = ImmOffs;
-		else
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = -(int)ImmOffs;
-
-		MI->flat_insn->detail->arm.op_count++;
-	}
-}
-
 static void printAM3PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O,
 		bool AlwaysPrintImm0)
 {
 	MCOperand *MO1 = MCInst_getOperand(MI, Op);
 	MCOperand *MO2 = MCInst_getOperand(MI, Op+1);
 	MCOperand *MO3 = MCInst_getOperand(MI, Op+2);
-	ARM_AM_AddrOpc op = getAM3Op((unsigned int)MCOperand_getImm(MO3));
+	ARM_AM_AddrOpc sign = getAM3Op((unsigned int)MCOperand_getImm(MO3));
 	unsigned ImmOffs;
 
 	SStream_concat0(O, "[");
@@ -927,12 +1041,14 @@ static void printAM3PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O,
 
 	if (MCOperand_getReg(MO2)) {
 		SStream_concat0(O, ", ");
-		SStream_concat0(O, ARM_AM_getAddrOpcStr(op));
+		SStream_concat0(O, ARM_AM_getAddrOpcStr(sign));
 		printRegName(MI->csh, O, MCOperand_getReg(MO2));
 		if (MI->csh->detail) {
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.index = MCOperand_getReg(MO2);
-			if (op)
+			if (!sign) {
 				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.scale = -1;
+				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = true;
+			}
 		}
 		SStream_concat0(O, "]");
 		set_mem_access(MI, false);
@@ -942,18 +1058,19 @@ static void printAM3PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O,
 	//If the op is sub we have to print the immediate even if it is 0
 	ImmOffs = getAM3Offset((unsigned int)MCOperand_getImm(MO3));
 
-	if (AlwaysPrintImm0 || ImmOffs || (op == ARM_AM_sub)) {
+	if (AlwaysPrintImm0 || ImmOffs || (sign == ARM_AM_sub)) {
 		if (ImmOffs > HEX_THRESHOLD)
-			SStream_concat(O, ", #%s0x%x", ARM_AM_getAddrOpcStr(op), ImmOffs);
+			SStream_concat(O, ", #%s0x%x", ARM_AM_getAddrOpcStr(sign), ImmOffs);
 		else
-			SStream_concat(O, ", #%s%u", ARM_AM_getAddrOpcStr(op), ImmOffs);
+			SStream_concat(O, ", #%s%u", ARM_AM_getAddrOpcStr(sign), ImmOffs);
 	}
 
 	if (MI->csh->detail) {
-		if (op)
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = (int)MCOperand_getImm(MO3);
-		else
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = (int)-MCOperand_getImm(MO3);
+		if (!sign) {
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = -(int)ImmOffs;
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = true;
+		} else
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = (int)ImmOffs;
 	}
 
 	SStream_concat0(O, "]");
@@ -963,19 +1080,9 @@ static void printAM3PreOrOffsetIndexOp(MCInst *MI, unsigned Op, SStream *O,
 static void printAddrMode3Operand(MCInst *MI, unsigned Op, SStream *O,
 		bool AlwaysPrintImm0)
 {
-	unsigned IdxMode;
-	MCOperand *MO3;
 	MCOperand *MO1 = MCInst_getOperand(MI, Op);
 	if (!MCOperand_isReg(MO1)) {   //  For label symbolic references.
 		printOperand(MI, Op, O);
-		return;
-	}
-
-	MO3 = MCInst_getOperand(MI, Op+2);
-	IdxMode = getAM3IdxMode((unsigned int)MCOperand_getImm(MO3));
-
-	if (IdxMode == ARMII_IndexModePost) {
-		printAM3PostIndexOp(MI, Op, O);
 		return;
 	}
 
@@ -986,15 +1093,16 @@ static void printAddrMode3OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *MO1 = MCInst_getOperand(MI, OpNum);
 	MCOperand *MO2 = MCInst_getOperand(MI, OpNum+1);
-	ARM_AM_AddrOpc op = getAM3Op((unsigned int)MCOperand_getImm(MO2));
+	ARM_AM_AddrOpc subtracted = getAM3Op((unsigned int)MCOperand_getImm(MO2));
 	unsigned ImmOffs;
 
 	if (MCOperand_getReg(MO1)) {
-		SStream_concat0(O, ARM_AM_getAddrOpcStr(op));
+		SStream_concat0(O, ARM_AM_getAddrOpcStr(subtracted));
 		printRegName(MI->csh, O, MCOperand_getReg(MO1));
 		if (MI->csh->detail) {
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = MCOperand_getReg(MO1);
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = subtracted == ARM_AM_sub;
 			MI->flat_insn->detail->arm.op_count++;
 		}
 		return;
@@ -1002,15 +1110,16 @@ static void printAddrMode3OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O)
 
 	ImmOffs = getAM3Offset((unsigned int)MCOperand_getImm(MO2));
 	if (ImmOffs > HEX_THRESHOLD)
-		SStream_concat(O, "#%s0x%x", ARM_AM_getAddrOpcStr(op), ImmOffs);
+		SStream_concat(O, "#%s0x%x", ARM_AM_getAddrOpcStr(subtracted), ImmOffs);
 	else
-		SStream_concat(O, "#%s%u", ARM_AM_getAddrOpcStr(op), ImmOffs);
+		SStream_concat(O, "#%s%u", ARM_AM_getAddrOpcStr(subtracted), ImmOffs);
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
 
-		if (op)
+		if (subtracted) {
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = ImmOffs;
-		else
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].subtracted = true;
+		} else
 			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = -(int)ImmOffs;
 
 		MI->flat_insn->detail->arm.op_count++;
@@ -1049,19 +1158,30 @@ static void printPostIdxRegOperand(MCInst *MI, unsigned OpNum, SStream *O)
 static void printPostIdxImm8s4Operand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *MO = MCInst_getOperand(MI, OpNum);
-	unsigned Imm = (unsigned int)MCOperand_getImm(MO);
-	if (((Imm & 0xff) << 2) > HEX_THRESHOLD)
+	int Imm = (int)MCOperand_getImm(MO);
+
+	if (((Imm & 0xff) << 2) > HEX_THRESHOLD) {
 		SStream_concat(O, "#%s0x%x", ((Imm & 256) ? "" : "-"), ((Imm & 0xff) << 2));
-	else
+	} else {
 		SStream_concat(O, "#%s%u", ((Imm & 256) ? "" : "-"), ((Imm & 0xff) << 2));
+	}
+
+	if (MI->csh->detail) {
+		int v = (Imm & 256) ? ((Imm & 0xff) << 2) : -((Imm & 0xff) << 2);
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = v;
+		MI->flat_insn->detail->arm.op_count++;
+	}
 }
 
 static void printAddrMode5Operand(MCInst *MI, unsigned OpNum, SStream *O,
 		bool AlwaysPrintImm0)
 {
+	unsigned ImmOffs;
 	MCOperand *MO1 = MCInst_getOperand(MI, OpNum);
 	MCOperand *MO2 = MCInst_getOperand(MI, OpNum+1);
-	unsigned ImmOffs, Op;
+	ARM_AM_AddrOpc subtracted = ARM_AM_getAM5Op((unsigned int)MCOperand_getImm(MO2));
+
 	if (!MCOperand_isReg(MO1)) {   // FIXME: This is for CP entries, but isn't right.
 		printOperand(MI, OpNum, O);
 		return;
@@ -1079,18 +1199,20 @@ static void printAddrMode5Operand(MCInst *MI, unsigned OpNum, SStream *O,
 	}
 
 	ImmOffs = ARM_AM_getAM5Offset((unsigned int)MCOperand_getImm(MO2));
-	Op = ARM_AM_getAM5Op((unsigned int)MCOperand_getImm(MO2));
-	if (AlwaysPrintImm0 || ImmOffs || Op == ARM_AM_sub) {
+	if (AlwaysPrintImm0 || ImmOffs || subtracted == ARM_AM_sub) {
 		if (ImmOffs * 4 > HEX_THRESHOLD)
 			SStream_concat(O, ", #%s0x%x",
-					ARM_AM_getAddrOpcStr(ARM_AM_getAM5Op((unsigned int)MCOperand_getImm(MO2))),
+					ARM_AM_getAddrOpcStr(subtracted),
 					ImmOffs * 4);
 		else
 			SStream_concat(O, ", #%s%u",
-					ARM_AM_getAddrOpcStr(ARM_AM_getAM5Op((unsigned int)MCOperand_getImm(MO2))),
+					ARM_AM_getAddrOpcStr(subtracted),
 					ImmOffs * 4);
 		if (MI->csh->detail) {
-			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = ImmOffs * 4;
+			if (subtracted)
+				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = ImmOffs * 4;
+			else
+				MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].mem.disp = -(int)ImmOffs * 4;
 		}
 	}
 	SStream_concat0(O, "]");
@@ -1139,9 +1261,10 @@ static void printAddrMode7Operand(MCInst *MI, unsigned OpNum, SStream *O)
 static void printAddrMode6OffsetOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *MO = MCInst_getOperand(MI, OpNum);
-	if (MCOperand_getReg(MO) == 0)
+	if (MCOperand_getReg(MO) == 0) {
+		MI->writeback = true;
 		SStream_concat0(O, "!");
-	else {
+	} else {
 		SStream_concat0(O, ", ");
 		printRegName(MI->csh, O, MCOperand_getReg(MO));
 		if (MI->csh->detail) {
@@ -1183,10 +1306,12 @@ static void printBitfieldInvMaskImmOperand(MCInst *MI, unsigned OpNum, SStream *
 static void printMemBOption(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	unsigned val = (unsigned int)MCOperand_getImm(MCInst_getOperand(MI, OpNum));
-	// FIXME: HasV80Ops becomes a mode
-	// SStream_concat0(O, ARM_MB_MemBOptToString(val,
-	// 			ARM_getFeatureBits(MI->csh->mode) & ARM_HasV8Ops));
-	SStream_concat0(O, ARM_MB_MemBOptToString(val, true));
+	SStream_concat0(O, ARM_MB_MemBOptToString(val + 1,
+				(ARM_getFeatureBits(MI->csh->mode) & ARM_HasV8Ops) != 0));
+
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.mem_barrier = (arm_mem_barrier)(val + 1);
+	}
 }
 
 void printInstSyncBOption(MCInst *MI, unsigned OpNum, SStream *O)
@@ -1295,16 +1420,33 @@ static void printGPRPairOperand(MCInst *MI, unsigned OpNum, SStream *O,
 static void printSetendOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *Op = MCInst_getOperand(MI, OpNum);
-	if (MCOperand_getImm(Op))
+	if (MCOperand_getImm(Op)) {
 		SStream_concat0(O, "be");
-	else
+		if (MI->csh->detail) {
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_SETEND;
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].setend = ARM_SETEND_BE;
+			MI->flat_insn->detail->arm.op_count++;
+		}
+	} else {
 		SStream_concat0(O, "le");
+		if (MI->csh->detail) {
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_SETEND;
+			MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].setend = ARM_SETEND_LE;
+			MI->flat_insn->detail->arm.op_count++;
+		}
+	}
 }
 
 static void printCPSIMod(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *Op = MCInst_getOperand(MI, OpNum);
-	SStream_concat0(O, ARM_PROC_IModToString((unsigned int)MCOperand_getImm(Op)));
+	unsigned int mode = (unsigned int)MCOperand_getImm(Op);
+
+	SStream_concat0(O, ARM_PROC_IModToString(mode));
+
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.cps_mode = mode;
+	}
 }
 
 static void printCPSIFlag(MCInst *MI, unsigned OpNum, SStream *O)
@@ -1312,105 +1454,141 @@ static void printCPSIFlag(MCInst *MI, unsigned OpNum, SStream *O)
 	MCOperand *Op = MCInst_getOperand(MI, OpNum);
 	unsigned IFlags = (unsigned int)MCOperand_getImm(Op);
 	int i;
-	for (i=2; i >= 0; --i)
-		if (IFlags & (1 << i))
-			SStream_concat0(O, ARM_PROC_IFlagsToString(1 << i));
 
-	if (IFlags == 0)
+	for (i = 2; i >= 0; --i)
+		if (IFlags & (1 << i)) {
+			SStream_concat0(O, ARM_PROC_IFlagsToString(1 << i));
+		}
+
+	if (IFlags == 0) {
 		SStream_concat0(O, "none");
+		IFlags = ARM_CPSFLAG_NONE;
+	}
 
 	if (MI->csh->detail) {
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = IFlags;
-		MI->flat_insn->detail->arm.op_count++;
+		MI->flat_insn->detail->arm.cps_flag = IFlags;
 	}
 }
 
-// TODO
 static void printMSRMaskOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *Op = MCInst_getOperand(MI, OpNum);
-#if 0 // TODO once below is fixed
-	unsigned SpecRegRBit = (unsigned int)MCOperand_getImm(Op) >> 4;
-	unsigned Mask = (unsigned int)MCOperand_getImm(Op) & 0xf;
-#endif
+	unsigned SpecRegRBit = (unsigned)MCOperand_getImm(Op) >> 4;
+	unsigned Mask = (unsigned)MCOperand_getImm(Op) & 0xf;
+	unsigned reg;
 
-	// FIXME: FeatureMClass becomes mode??
-	//if (ARM_getFeatureBits(MI->csh->mode) & ARM_FeatureMClass) {
-	//if (true)
-	{
-		unsigned SYSm = (unsigned int)MCOperand_getImm(Op);
+	if (ARM_getFeatureBits(MI->csh->mode) & ARM_FeatureMClass) {
+		unsigned SYSm = (unsigned)MCOperand_getImm(Op);
 		unsigned Opcode = MCInst_getOpcode(MI);
 		// For reads of the special registers ignore the "mask encoding" bits
 		// which are only for writes.
 		if (Opcode == ARM_t2MRS_M)
 			SYSm &= 0xff;
 		switch (SYSm) {
-			default: return; //llvm_unreachable("Unexpected mask value!");
+			default: //llvm_unreachable("Unexpected mask value!");
 			case     0:
-			case 0x800: SStream_concat0(O, "apsr"); return; // with _nzcvq bits is an alias for aspr
-			case 0x400: SStream_concat0(O, "apsr_g"); return;
-			case 0xc00: SStream_concat0(O, "apsr_nzcvqg"); return;
+			case 0x800: SStream_concat0(O, "apsr"); ARM_addSysReg(MI, ARM_SYSREG_APSR); return; // with _nzcvq bits is an alias for aspr
+			case 0x400: SStream_concat0(O, "apsr_g"); ARM_addSysReg(MI, ARM_SYSREG_APSR_G); return;
+			case 0xc00: SStream_concat0(O, "apsr_nzcvqg"); ARM_addSysReg(MI, ARM_SYSREG_APSR_NZCVQG); return;
 			case     1:
-			case 0x801: SStream_concat0(O, "iapsr"); return; // with _nzcvq bits is an alias for iapsr
-			case 0x401: SStream_concat0(O, "iapsr_g"); return;
-			case 0xc01: SStream_concat0(O, "iapsr_nzcvqg"); return;
+			case 0x801: SStream_concat0(O, "iapsr"); ARM_addSysReg(MI, ARM_SYSREG_IAPSR); return; // with _nzcvq bits is an alias for iapsr
+			case 0x401: SStream_concat0(O, "iapsr_g"); ARM_addSysReg(MI, ARM_SYSREG_IAPSR_G); return;
+			case 0xc01: SStream_concat0(O, "iapsr_nzcvqg"); ARM_addSysReg(MI, ARM_SYSREG_IAPSR_NZCVQG); return;
 			case     2:
-			case 0x802: SStream_concat0(O, "eapsr"); return; // with _nzcvq bits is an alias for eapsr
-			case 0x402: SStream_concat0(O, "eapsr_g"); return;
-			case 0xc02: SStream_concat0(O, "eapsr_nzcvqg"); return;
+			case 0x802: SStream_concat0(O, "eapsr"); ARM_addSysReg(MI, ARM_SYSREG_EAPSR); return; // with _nzcvq bits is an alias for eapsr
+			case 0x402: SStream_concat0(O, "eapsr_g"); ARM_addSysReg(MI, ARM_SYSREG_EAPSR_G); return;
+			case 0xc02: SStream_concat0(O, "eapsr_nzcvqg"); ARM_addSysReg(MI, ARM_SYSREG_EAPSR_NZCVQG); return;
 			case     3:
-			case 0x803: SStream_concat0(O, "xpsr"); return; // with _nzcvq bits is an alias for xpsr
-			case 0x403: SStream_concat0(O, "xpsr_g"); return;
-			case 0xc03: SStream_concat0(O, "xpsr_nzcvqg"); return;
+			case 0x803: SStream_concat0(O, "xpsr"); ARM_addSysReg(MI, ARM_SYSREG_XPSR); return; // with _nzcvq bits is an alias for xpsr
+			case 0x403: SStream_concat0(O, "xpsr_g"); ARM_addSysReg(MI, ARM_SYSREG_XPSR_G); return;
+			case 0xc03: SStream_concat0(O, "xpsr_nzcvqg"); ARM_addSysReg(MI, ARM_SYSREG_XPSR_NZCVQG); return;
 			case     5:
-			case 0x805: SStream_concat0(O, "ipsr"); return;
+			case 0x805: SStream_concat0(O, "ipsr"); ARM_addSysReg(MI, ARM_SYSREG_IPSR); return;
 			case     6:
-			case 0x806: SStream_concat0(O, "epsr"); return;
+			case 0x806: SStream_concat0(O, "epsr"); ARM_addSysReg(MI, ARM_SYSREG_EPSR); return;
 			case     7:
-			case 0x807: SStream_concat0(O, "iepsr"); return;
+			case 0x807: SStream_concat0(O, "iepsr"); ARM_addSysReg(MI, ARM_SYSREG_IEPSR); return;
 			case     8:
-			case 0x808: SStream_concat0(O, "msp"); return;
+			case 0x808: SStream_concat0(O, "msp"); ARM_addSysReg(MI, ARM_SYSREG_MSP); return;
 			case     9:
-			case 0x809: SStream_concat0(O, "psp"); return;
+			case 0x809: SStream_concat0(O, "psp"); ARM_addSysReg(MI, ARM_SYSREG_PSP); return;
 			case  0x10:
-			case 0x810: SStream_concat0(O, "primask"); return;
+			case 0x810: SStream_concat0(O, "primask"); ARM_addSysReg(MI, ARM_SYSREG_PRIMASK); return;
 			case  0x11:
-			case 0x811: SStream_concat0(O, "basepri"); return;
+			case 0x811: SStream_concat0(O, "basepri"); ARM_addSysReg(MI, ARM_SYSREG_BASEPRI); return;
 			case  0x12:
-			case 0x812: SStream_concat0(O, "basepri_max"); return;
+			case 0x812: SStream_concat0(O, "basepri_max"); ARM_addSysReg(MI, ARM_SYSREG_BASEPRI_MAX); return;
 			case  0x13:
-			case 0x813: SStream_concat0(O, "faultmask"); return;
+			case 0x813: SStream_concat0(O, "faultmask"); ARM_addSysReg(MI, ARM_SYSREG_FAULTMASK); return;
 			case  0x14:
-			case 0x814: SStream_concat0(O, "control"); return;
+			case 0x814: SStream_concat0(O, "control"); ARM_addSysReg(MI, ARM_SYSREG_CONTROL); return;
 		}
 	}
-#if 0 // TODO once above is fixed
+
 	// As special cases, CPSR_f, CPSR_s and CPSR_fs prefer printing as
 	// APSR_nzcvq, APSR_g and APSRnzcvqg, respectively.
 	if (!SpecRegRBit && (Mask == 8 || Mask == 4 || Mask == 12)) {
 		SStream_concat0(O, "apsr_");
 		switch (Mask) {
-			default: return; //llvm_unreachable("Unexpected mask value!");
-			case 4:  SStream_concat0(O, "g"); return;
-			case 8:  SStream_concat0(O, "nzcvq"); return;
-			case 12: SStream_concat0(O, "nzcvqg"); return;
+			default: // llvm_unreachable("Unexpected mask value!");
+			case 4:  SStream_concat0(O, "g"); ARM_addSysReg(MI, ARM_SYSREG_APSR_G); return;
+			case 8:  SStream_concat0(O, "nzcvq"); ARM_addSysReg(MI, ARM_SYSREG_APSR_NZCVQ); return;
+			case 12: SStream_concat0(O, "nzcvqg"); ARM_addSysReg(MI, ARM_SYSREG_APSR_NZCVQG); return;
 		}
 	}
 
-	if (SpecRegRBit)
+	reg = 0;
+	if (SpecRegRBit) {
 		SStream_concat0(O, "spsr");
-	else
-		SStream_concat0(O, "cpsr");
+		if (Mask) {
+			SStream_concat0(O, "_");
+			if (Mask & 8) {
+				SStream_concat0(O, "f");
+				reg += ARM_SYSREG_SPSR_F;
+			}
 
-	if (Mask) {
-		SStream_concat0(O, "_");
-		if (Mask & 8) SStream_concat0(O, "f");
-		if (Mask & 4) SStream_concat0(O, "s");
-		if (Mask & 2) SStream_concat0(O, "x");
-		if (Mask & 1) SStream_concat0(O, "c");
+			if (Mask & 4) {
+				SStream_concat0(O, "s");
+				reg += ARM_SYSREG_SPSR_S;
+			}
+
+			if (Mask & 2) {
+				SStream_concat0(O, "x");
+				reg += ARM_SYSREG_SPSR_X;
+			}
+
+			if (Mask & 1) {
+				SStream_concat0(O, "c");
+				reg += ARM_SYSREG_SPSR_C;
+			}
+			ARM_addSysReg(MI, reg);
+		}
+	} else {
+		SStream_concat0(O, "cpsr");
+		if (Mask) {
+			SStream_concat0(O, "_");
+			if (Mask & 8) {
+				SStream_concat0(O, "f");
+				reg += ARM_SYSREG_CPSR_F;
+			}
+
+			if (Mask & 4) {
+				SStream_concat0(O, "s");
+				reg += ARM_SYSREG_CPSR_S;
+			}
+
+			if (Mask & 2) {
+				SStream_concat0(O, "x");
+				reg += ARM_SYSREG_CPSR_X;
+			}
+
+			if (Mask & 1) {
+				SStream_concat0(O, "c");
+				reg += ARM_SYSREG_CPSR_C;
+			}
+			ARM_addSysReg(MI, reg);
+		}
 	}
-#endif
 }
 
 static void printPredicateOperand(MCInst *MI, unsigned OpNum, SStream *O)
@@ -1444,9 +1622,9 @@ static void printSBitModifierOperand(MCInst *MI, unsigned OpNum, SStream *O)
 	if (MCOperand_getReg(MCInst_getOperand(MI, OpNum))) {
 		//assert(MCOperand_getReg(MCInst_getOperand(MI, OpNum)) == ARM_CPSR &&
 		//       "Expect ARM CPSR register!");
+		SStream_concat0(O, "s");
 		if (MI->csh->detail)
 			MI->flat_insn->detail->arm.update_flags = true;
-		SStream_concat0(O, "s");
 	}
 }
 
@@ -1470,20 +1648,24 @@ static void printNoHashImmediate(MCInst *MI, unsigned OpNum, SStream *O)
 
 static void printPImmediate(MCInst *MI, unsigned OpNum, SStream *O)
 {
-	SStream_concat(O, "p%u", MCOperand_getImm(MCInst_getOperand(MI, OpNum)));
+	unsigned imm = (unsigned int)MCOperand_getImm(MCInst_getOperand(MI, OpNum));
+
+	SStream_concat(O, "p%u", imm);
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_PIMM;
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = (unsigned int)MCOperand_getImm(MCInst_getOperand(MI, OpNum));
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = imm;
 		MI->flat_insn->detail->arm.op_count++;
 	}
 }
 
 static void printCImmediate(MCInst *MI, unsigned OpNum, SStream *O)
 {
-	SStream_concat(O, "c%u", MCOperand_getImm(MCInst_getOperand(MI, OpNum)));
+	unsigned imm = (unsigned int)MCOperand_getImm(MCInst_getOperand(MI, OpNum));
+
+	SStream_concat(O, "c%u", imm);
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_CIMM;
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = (unsigned int)MCOperand_getImm(MCInst_getOperand(MI, OpNum));
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = imm;
 		MI->flat_insn->detail->arm.op_count++;
 	}
 }
@@ -1562,7 +1744,6 @@ static void printThumbSRImm(MCInst *MI, unsigned OpNum, SStream *O)
 	}
 }
 
-// TODO
 static void printThumbITMask(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	// (3 - the number of trailing zeros) is the number of then / else.
@@ -1942,7 +2123,13 @@ static void printT2AddrModeSoRegOperand(MCInst *MI,
 static void printFPImmOperand(MCInst *MI, unsigned OpNum, SStream *O)
 {
 	MCOperand *MO = MCInst_getOperand(MI, OpNum);
-	SStream_concat(O, "#%f", getFPImmFloat((unsigned int)MCOperand_getImm(MO)));
+
+#if defined(_KERNEL_MODE)
+	// Issue #681: Windows kernel does not support formatting float point
+	SStream_concat(O, "#<float_point_unsupported>");
+#else
+	SStream_concat(O, "#%e", getFPImmFloat((unsigned int)MCOperand_getImm(MO)));
+#endif
 	if (MI->csh->detail) {
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_FP;
 		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].fp = getFPImmFloat((unsigned int)MCOperand_getImm(MO));
@@ -2038,9 +2225,7 @@ static void printVectorIndex(MCInst *MI, unsigned OpNum, SStream *O)
 	else
 		SStream_concat(O, "[%u]",tmp);
 	if (MI->csh->detail) {
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_IMM;
-		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].imm = tmp;
-		MI->flat_insn->detail->arm.op_count++;
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count - 1].vector_index = tmp;
 	}
 }
 
@@ -2420,6 +2605,45 @@ static void printVectorListFourSpaced(MCInst *MI, unsigned OpNum, SStream *O)
 		MI->flat_insn->detail->arm.op_count++;
 	}
 	SStream_concat0(O, "}");
+}
+
+void ARM_addVectorDataType(MCInst *MI, arm_vectordata_type vd)
+{
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.vector_data = vd;
+	}
+}
+
+void ARM_addVectorDataSize(MCInst *MI, int size)
+{
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.vector_size = size;
+	}
+}
+
+void ARM_addReg(MCInst *MI, int reg)
+{
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_REG;
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = reg;
+		MI->flat_insn->detail->arm.op_count++;
+	}
+}
+
+void ARM_addUserMode(MCInst *MI)
+{
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.usermode = true;
+	}
+}
+
+void ARM_addSysReg(MCInst *MI, arm_sysreg reg)
+{
+	if (MI->csh->detail) {
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].type = ARM_OP_SYSREG;
+		MI->flat_insn->detail->arm.operands[MI->flat_insn->detail->arm.op_count].reg = reg;
+		MI->flat_insn->detail->arm.op_count++;
+	}
 }
 
 #endif

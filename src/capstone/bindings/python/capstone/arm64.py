@@ -1,6 +1,7 @@
 # Capstone Python bindings, by Nguyen Anh Quynnh <aquynh@gmail.com>
 
-import ctypes, copy
+import ctypes
+from . import copy_ctypes_list
 from .arm64_const import *
 
 # define the API
@@ -20,13 +21,20 @@ class Arm64OpShift(ctypes.Structure):
 class Arm64OpValue(ctypes.Union):
     _fields_ = (
         ('reg', ctypes.c_uint),
-        ('imm', ctypes.c_int32),
+        ('imm', ctypes.c_int64),
         ('fp', ctypes.c_double),
         ('mem', Arm64OpMem),
+        ('pstate', ctypes.c_int),
+        ('sys', ctypes.c_uint),
+        ('prefetch', ctypes.c_int),
+        ('barrier', ctypes.c_int),
     )
 
 class Arm64Op(ctypes.Structure):
     _fields_ = (
+        ('vector_index', ctypes.c_int),
+        ('vas', ctypes.c_int),
+        ('vess', ctypes.c_int),
         ('shift', Arm64OpShift),
         ('ext', ctypes.c_uint),
         ('type', ctypes.c_uint),
@@ -49,6 +57,23 @@ class Arm64Op(ctypes.Structure):
     def mem(self):
         return self.value.mem
 
+    @property
+    def pstate(self):
+        return self.value.pstate
+
+    @property
+    def sys(self):
+        return self.value.sys
+
+    @property
+    def prefetch(self):
+        return self.value.prefetch
+
+    @property
+    def barrier(self):
+        return self.value.barrier
+
+
 
 class CsArm64(ctypes.Structure):
     _fields_ = (
@@ -60,5 +85,5 @@ class CsArm64(ctypes.Structure):
     )
 
 def get_arch_info(a):
-    return (a.cc, a.update_flags, a.writeback, copy.deepcopy(a.operands[:a.op_count]))
+    return (a.cc, a.update_flags, a.writeback, copy_ctypes_list(a.operands[:a.op_count]))
 

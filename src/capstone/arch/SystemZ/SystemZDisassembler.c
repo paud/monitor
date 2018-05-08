@@ -302,7 +302,7 @@ bool SystemZ_getInstruction(csh ud, const uint8_t *code, size_t code_len, MCInst
 {
 	uint64_t Inst;
 	uint8_t Bytes[6];
-	uint8_t *Table;
+	const uint8_t *Table;
 	uint16_t I; 
 
 	// The top 2 bits of the first byte specify the size.
@@ -319,10 +319,10 @@ bool SystemZ_getInstruction(csh ud, const uint8_t *code, size_t code_len, MCInst
 
 	if (code_len < *size)
 		// short of input data
-		return MCDisassembler_Fail;
+		return false;
 
 	if (MI->flat_insn->detail) {
-		memset(&MI->flat_insn->detail->sysz, 0, sizeof(cs_sysz));
+		memset(MI->flat_insn->detail, 0, sizeof(cs_detail));
 	}
 
 	memcpy(Bytes, code, *size);

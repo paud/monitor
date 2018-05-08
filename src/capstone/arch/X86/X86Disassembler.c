@@ -19,7 +19,6 @@
 
 #ifdef CAPSTONE_HAS_X86
 
-#include <inttypes.h>	// debug
 #include <string.h>
 
 #include "../../cs_priv.h"
@@ -32,6 +31,7 @@
 #include "X86Mapping.h"
 
 #define GET_REGINFO_ENUM
+#define GET_REGINFO_MC_DESC
 #include "X86GenRegisterInfo.inc"
 
 #define GET_INSTRINFO_ENUM
@@ -65,7 +65,7 @@ enum {
 static void translateRegister(MCInst *mcInst, Reg reg)
 {
 #define ENTRY(x) X86_##x,
-	uint8_t llvmRegnums[] = {
+	static const uint8_t llvmRegnums[] = {
 		ALL_REGS
 			0
 	};
@@ -94,12 +94,12 @@ static bool translateSrcIndex(MCInst *mcInst, InternalInstruction *insn)
 	unsigned baseRegNo;
 
 	if (insn->mode == MODE_64BIT)
-		baseRegNo = insn->prefixPresent[0x67] ? X86_ESI : X86_RSI;
+		baseRegNo = insn->isPrefix67 ? X86_ESI : X86_RSI;
 	else if (insn->mode == MODE_32BIT)
-		baseRegNo = insn->prefixPresent[0x67] ? X86_SI : X86_ESI;
+		baseRegNo = insn->isPrefix67 ? X86_SI : X86_ESI;
 	else {
 		// assert(insn->mode == MODE_16BIT);
-		baseRegNo = insn->prefixPresent[0x67] ? X86_ESI : X86_SI;
+		baseRegNo = insn->isPrefix67 ? X86_ESI : X86_SI;
 	}
 
 	MCOperand_CreateReg0(mcInst, baseRegNo);
@@ -118,12 +118,12 @@ static bool translateDstIndex(MCInst *mcInst, InternalInstruction *insn)
 	unsigned baseRegNo;
 
 	if (insn->mode == MODE_64BIT)
-		baseRegNo = insn->prefixPresent[0x67] ? X86_EDI : X86_RDI;
+		baseRegNo = insn->isPrefix67 ? X86_EDI : X86_RDI;
 	else if (insn->mode == MODE_32BIT)
-		baseRegNo = insn->prefixPresent[0x67] ? X86_DI : X86_EDI;
+		baseRegNo = insn->isPrefix67 ? X86_DI : X86_EDI;
 	else {
 		// assert(insn->mode == MODE_16BIT);
-		baseRegNo = insn->prefixPresent[0x67] ? X86_EDI : X86_DI;
+		baseRegNo = insn->isPrefix67 ? X86_EDI : X86_DI;
 	}
 
 	MCOperand_CreateReg0(mcInst, baseRegNo);
@@ -167,34 +167,37 @@ static void translateImmediate(MCInst *mcInst, uint64_t immediate,
 	} // By default sign-extend all X86 immediates based on their encoding.
 	else if (type == TYPE_IMM8 || type == TYPE_IMM16 || type == TYPE_IMM32 ||
 			type == TYPE_IMM64 || type == TYPE_IMMv) {
+
 		uint32_t Opcode = MCInst_getOpcode(mcInst);
+		bool check_opcode;
+
 		switch (operand->encoding) {
 			default:
 				break;
 			case ENCODING_IB:
 				// Special case those X86 instructions that use the imm8 as a set of
 				// bits, bit count, etc. and are not sign-extend.
-				if (
+				check_opcode = (Opcode != X86_INT);
 #ifndef CAPSTONE_X86_REDUCE
-						Opcode != X86_BLENDPSrri &&
-						Opcode != X86_BLENDPDrri &&
-						Opcode != X86_PBLENDWrri &&
-						Opcode != X86_MPSADBWrri &&
-						Opcode != X86_DPPSrri &&
-						Opcode != X86_DPPDrri &&
-						Opcode != X86_INSERTPSrr &&
-						Opcode != X86_VBLENDPSYrri &&
-						Opcode != X86_VBLENDPSYrmi &&
-						Opcode != X86_VBLENDPDYrri &&
-						Opcode != X86_VBLENDPDYrmi &&
-						Opcode != X86_VPBLENDWrri &&
-						Opcode != X86_VMPSADBWrri &&
-						Opcode != X86_VDPPSYrri &&
-						Opcode != X86_VDPPSYrmi &&
-						Opcode != X86_VDPPDrri &&
-						Opcode != X86_VINSERTPSrr &&
+        check_opcode = ((Opcode != X86_BLENDPSrri &&
+						            Opcode != X86_BLENDPDrri &&
+						            Opcode != X86_PBLENDWrri &&
+						            Opcode != X86_MPSADBWrri &&
+						            Opcode != X86_DPPSrri &&
+						            Opcode != X86_DPPDrri &&
+						            Opcode != X86_INSERTPSrr &&
+						            Opcode != X86_VBLENDPSYrri &&
+						            Opcode != X86_VBLENDPSYrmi &&
+						            Opcode != X86_VBLENDPDYrri &&
+						            Opcode != X86_VBLENDPDYrmi &&
+						            Opcode != X86_VPBLENDWrri &&
+						            Opcode != X86_VMPSADBWrri &&
+						            Opcode != X86_VDPPSYrri &&
+						            Opcode != X86_VDPPSYrmi &&
+						            Opcode != X86_VDPPDrri &&
+						            Opcode != X86_VINSERTPSrr) && check_opcode);
 #endif
-						Opcode != X86_INT)
+				if (check_opcode)
 						if(immediate & 0x80)
 							immediate |= ~(0xffull);
 				break;
@@ -209,6 +212,64 @@ static void translateImmediate(MCInst *mcInst, uint64_t immediate,
 			case ENCODING_IO:
 				break;
 		}
+	} else if (type == TYPE_IMM3) {
+#ifndef CAPSTONE_X86_REDUCE
+		// Check for immediates that printSSECC can't handle.
+		if (immediate >= 8) {
+			unsigned NewOpc = 0;
+
+			switch (MCInst_getOpcode(mcInst)) {
+				default: break;	// never reach
+				case X86_CMPPDrmi: NewOpc = X86_CMPPDrmi_alt; break;
+				case X86_CMPPDrri: NewOpc = X86_CMPPDrri_alt; break;
+				case X86_CMPPSrmi: NewOpc = X86_CMPPSrmi_alt; break;
+				case X86_CMPPSrri: NewOpc = X86_CMPPSrri_alt; break;
+				case X86_CMPSDrm:  NewOpc = X86_CMPSDrm_alt;  break;
+				case X86_CMPSDrr:  NewOpc = X86_CMPSDrr_alt;  break;
+				case X86_CMPSSrm:  NewOpc = X86_CMPSSrm_alt;  break;
+				case X86_CMPSSrr:  NewOpc = X86_CMPSSrr_alt;  break;
+			}
+			// Switch opcode to the one that doesn't get special printing.
+			if (NewOpc != 0) {
+				MCInst_setOpcode(mcInst, NewOpc);
+			}
+		}
+#endif
+	} else if (type == TYPE_IMM5) {
+#ifndef CAPSTONE_X86_REDUCE
+		// Check for immediates that printAVXCC can't handle.
+		if (immediate >= 32) {
+			unsigned NewOpc = 0;
+
+			switch (MCInst_getOpcode(mcInst)) {
+				default: break; // unexpected opcode
+				case X86_VCMPPDrmi:  NewOpc = X86_VCMPPDrmi_alt;  break;
+				case X86_VCMPPDrri:  NewOpc = X86_VCMPPDrri_alt;  break;
+				case X86_VCMPPSrmi:  NewOpc = X86_VCMPPSrmi_alt;  break;
+				case X86_VCMPPSrri:  NewOpc = X86_VCMPPSrri_alt;  break;
+				case X86_VCMPSDrm:   NewOpc = X86_VCMPSDrm_alt;   break;
+				case X86_VCMPSDrr:   NewOpc = X86_VCMPSDrr_alt;   break;
+				case X86_VCMPSSrm:   NewOpc = X86_VCMPSSrm_alt;   break;
+				case X86_VCMPSSrr:   NewOpc = X86_VCMPSSrr_alt;   break;
+				case X86_VCMPPDYrmi: NewOpc = X86_VCMPPDYrmi_alt; break;
+				case X86_VCMPPDYrri: NewOpc = X86_VCMPPDYrri_alt; break;
+				case X86_VCMPPSYrmi: NewOpc = X86_VCMPPSYrmi_alt; break;
+				case X86_VCMPPSYrri: NewOpc = X86_VCMPPSYrri_alt; break;
+				case X86_VCMPPDZrmi: NewOpc = X86_VCMPPDZrmi_alt; break;
+				case X86_VCMPPDZrri: NewOpc = X86_VCMPPDZrri_alt; break;
+				case X86_VCMPPSZrmi: NewOpc = X86_VCMPPSZrmi_alt; break;
+				case X86_VCMPPSZrri: NewOpc = X86_VCMPPSZrri_alt; break;
+				case X86_VCMPSDZrm:  NewOpc = X86_VCMPSDZrmi_alt; break;
+				case X86_VCMPSDZrr:  NewOpc = X86_VCMPSDZrri_alt; break;
+				case X86_VCMPSSZrm:  NewOpc = X86_VCMPSSZrmi_alt; break;
+				case X86_VCMPSSZrr:  NewOpc = X86_VCMPSSZrri_alt; break;
+			}
+			// Switch opcode to the one that doesn't get special printing.
+			if (NewOpc != 0) {
+				MCInst_setOpcode(mcInst, NewOpc);
+			}
+		}
+#endif
 	}
 
 	switch (type) {
@@ -292,12 +353,12 @@ static bool translateRMRegister(MCInst *mcInst, InternalInstruction *insn)
 static bool translateRMMemory(MCInst *mcInst, InternalInstruction *insn)
 {
 	// Addresses in an MCInst are represented as five operands:
-	//   1. basereg       (register)  The R/M base, or (if there is a SIB) the 
+	//   1. basereg       (register)  The R/M base, or (if there is a SIB) the
 	//                                SIB base
-	//   2. scaleamount   (immediate) 1, or (if there is a SIB) the specified 
+	//   2. scaleamount   (immediate) 1, or (if there is a SIB) the specified
 	//                                scale amount
 	//   3. indexreg      (register)  x86_registerNONE, or (if there is a SIB)
-	//                                the index (which is multiplied by the 
+	//                                the index (which is multiplied by the
 	//                                scale amount)
 	//   4. displacement  (immediate) 0, or the displacement if there is one
 	//   5. segmentreg    (register)  x86_registerNONE for now, but could be set
@@ -449,7 +510,7 @@ static bool translateRMMemory(MCInst *mcInst, InternalInstruction *insn)
 						//   placeholders to keep the compiler happy.
 #define ENTRY(x)                                        \
 					case EA_BASE_##x:                                 \
-						  MCOperand_CreateReg0(mcInst, X86_##x); break; 
+						  MCOperand_CreateReg0(mcInst, X86_##x); break;
 						ALL_EA_BASES
 #undef ENTRY
 #define ENTRY(x) case EA_REG_##x:
@@ -483,7 +544,7 @@ static bool translateRMMemory(MCInst *mcInst, InternalInstruction *insn)
 /// @return             - 0 on success; nonzero otherwise
 static bool translateRM(MCInst *mcInst, const OperandSpecifier *operand,
 		InternalInstruction *insn)
-{  
+{
 	switch (operand->type) {
 		case TYPE_R8:
 		case TYPE_R16:
@@ -559,7 +620,7 @@ static bool translateMaskRegister(MCInst *mcInst, uint8_t maskRegNum)
 	return false;
 }
 
-/// translateOperand - Translates an operand stored in an internal instruction 
+/// translateOperand - Translates an operand stored in an internal instruction
 ///   to LLVM's format and appends it to an MCInst.
 ///
 /// @param mcInst       - The MCInst to append to.
@@ -574,7 +635,7 @@ static bool translateOperand(MCInst *mcInst, const OperandSpecifier *operand, In
 			return false;
 		case ENCODING_WRITEMASK:
 			return translateMaskRegister(mcInst, insn->writemask);
-		case ENCODING_RM:
+		CASE_ENCODING_RM:
 			return translateRM(mcInst, operand, insn);
 		case ENCODING_CB:
 		case ENCODING_CW:
@@ -672,20 +733,26 @@ static void update_pub_insn(cs_insn *pub, InternalInstruction *inter, uint8_t *p
 	prefixes[2] = inter->prefix2;
 	prefixes[3] = inter->prefix3;
 
-	pub->detail->x86.segment = x86_map_segment(inter->segmentOverride);
-
-	if (inter->vectorExtensionType > 0)
+	if (inter->vectorExtensionType != 0)
 		memcpy(pub->detail->x86.opcode, inter->vectorExtensionPrefix, sizeof(pub->detail->x86.opcode));
 	else {
-		pub->detail->x86.opcode[0] = inter->opcode;
-		pub->detail->x86.opcode[1] = inter->twoByteEscape;
-		pub->detail->x86.opcode[2] = inter->threeByteEscape;
+		if (inter->twoByteEscape) {
+			if (inter->threeByteEscape) {
+				pub->detail->x86.opcode[0] = inter->twoByteEscape;
+				pub->detail->x86.opcode[1] = inter->threeByteEscape;
+				pub->detail->x86.opcode[2] = inter->opcode;
+			} else {
+				pub->detail->x86.opcode[0] = inter->twoByteEscape;
+				pub->detail->x86.opcode[1] = inter->opcode;
+			}
+		} else {
+				pub->detail->x86.opcode[0] = inter->opcode;
+		}
 	}
 
-	pub->detail->x86.op_size = inter->operandSize;
+	pub->detail->x86.rex = inter->rexPrefix;
+
 	pub->detail->x86.addr_size = inter->addressSize;
-	pub->detail->x86.disp_size = inter->displacementSize;
-	pub->detail->x86.imm_size = inter->immediateSize;
 
 	pub->detail->x86.modrm = inter->orgModRM;
 	pub->detail->x86.sib = inter->sib;
@@ -694,6 +761,25 @@ static void update_pub_insn(cs_insn *pub, InternalInstruction *inter, uint8_t *p
 	pub->detail->x86.sib_index = x86_map_sib_index(inter->sibIndex);
 	pub->detail->x86.sib_scale = inter->sibScale;
 	pub->detail->x86.sib_base = x86_map_sib_base(inter->sibBase);
+}
+
+void X86_init(MCRegisterInfo *MRI)
+{
+	/*
+	   InitMCRegisterInfo(X86RegDesc, 234,
+	   RA, PC,
+	   X86MCRegisterClasses, 79,
+	   X86RegUnitRoots, 119, X86RegDiffLists, X86RegStrings,
+	   X86SubRegIdxLists, 7,
+	   X86SubRegIdxRanges, X86RegEncodingTable);
+	*/
+
+	MCRegisterInfo_InitMCRegisterInfo(MRI, X86RegDesc, 234,
+			0, 0,
+			X86MCRegisterClasses, 79,
+			0, 0, X86RegDiffLists, 0,
+			X86SubRegIdxLists, 7,
+			0);
 }
 
 // Public interface for the disassembler
@@ -714,8 +800,14 @@ bool X86_getInstruction(csh ud, const uint8_t *code, size_t code_len,
 
 	if (instr->flat_insn->detail) {
 		instr->flat_insn->detail->x86.op_count = 0;
+		instr->flat_insn->detail->x86.sse_cc = X86_SSE_CC_INVALID;
+		instr->flat_insn->detail->x86.avx_cc = X86_AVX_CC_INVALID;
+		instr->flat_insn->detail->x86.avx_sae = false;
+		instr->flat_insn->detail->x86.avx_rm = X86_AVX_RM_INVALID;
+
 		memset(instr->flat_insn->detail->x86.prefix, 0, sizeof(instr->flat_insn->detail->x86.prefix));
-		memset(instr->flat_insn->detail->x86.operands, 0, 4 * sizeof(instr->flat_insn->detail->x86.operands[0]));
+		memset(instr->flat_insn->detail->x86.opcode, 0, sizeof(instr->flat_insn->detail->x86.opcode));
+		memset(instr->flat_insn->detail->x86.operands, 0, sizeof(instr->flat_insn->detail->x86.operands));
 	}
 
 	if (handle->mode & CS_MODE_16)
@@ -743,18 +835,26 @@ bool X86_getInstruction(csh ud, const uint8_t *code, size_t code_len,
 
 		result = (!translateInstruction(instr, &insn)) ?  true : false;
 		if (result) {
-			if (handle->detail)
+			// quick fix for #904. TODO: fix this properly in the next update
+			if (handle->mode & CS_MODE_64) {
+				if (instr->Opcode == X86_LES16rm || instr->Opcode == X86_LES32rm)
+					// LES is invalid in x64
+					return false;
+				if (instr->Opcode == X86_LDS16rm || instr->Opcode == X86_LDS32rm)
+					// LDS is invalid in x64
+					return false;
+			}
+
+			instr->imm_size = insn.immSize;
+			if (handle->detail) {
 				update_pub_insn(instr->flat_insn, &insn, instr->x86_prefix);
-			else {
-				// copy all prefixes
+			} else {
+				// still copy all prefixes
 				instr->x86_prefix[0] = insn.prefix0;
 				instr->x86_prefix[1] = insn.prefix1;
 				instr->x86_prefix[2] = insn.prefix2;
 				instr->x86_prefix[3] = insn.prefix3;
 			}
-
-			// save immediate size to print immediate properly
-			instr->x86_imm_size = insn.immediateSize;
 		}
 
 		return result;

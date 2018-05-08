@@ -9,10 +9,12 @@ int main(void)
  csh handle;
  cs_insn *insn;
   size_t count;
+  //printf("helo!");
  
   if (cs_open(CS_ARCH_X86, CS_MODE_64, &handle) != CS_ERR_OK)
      return -1;
-  count = cs_disasm(handle, CODE, sizeof(CODE)-1, 0x1000, 0, &insn);
+  int l=sizeof(CODE)-1;
+  count = cs_disasm(handle, CODE, l, 0, 0, &insn);
   if (count > 0) {
       size_t j;
       for (j = 0; j < count; j++) {

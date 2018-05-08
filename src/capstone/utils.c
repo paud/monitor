@@ -1,13 +1,17 @@
 /* Capstone Disassembly Engine */
 /* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2014 */
 
+#if defined(CAPSTONE_HAS_OSXKERNEL)
+#include <libkern/libkern.h>
+#else
 #include <stdlib.h>
+#endif
 #include <string.h>
 
 #include "utils.h"
 
 // create a cache for fast id lookup
-static unsigned short *make_id2insn(insn_map *insns, unsigned int size)
+static unsigned short *make_id2insn(const insn_map *insns, unsigned int size)
 {
 	// NOTE: assume that the max id is always put at the end of insns array
 	unsigned short max_id = insns[size - 1].id;
@@ -23,7 +27,7 @@ static unsigned short *make_id2insn(insn_map *insns, unsigned int size)
 
 // look for @id in @insns, given its size in @max. first time call will update @cache.
 // return 0 if not found
-unsigned short insn_find(insn_map *insns, unsigned int max, unsigned int id, unsigned short **cache)
+unsigned short insn_find(const insn_map *insns, unsigned int max, unsigned int id, unsigned short **cache)
 {
 	if (id > insns[max - 1].id)
 		return 0;
@@ -34,7 +38,7 @@ unsigned short insn_find(insn_map *insns, unsigned int max, unsigned int id, uns
 	return (*cache)[id];
 }
 
-int name2id(name_map* map, int max, const char *name)
+int name2id(const name_map* map, int max, const char *name)
 {
 	int i;
 
@@ -50,7 +54,7 @@ int name2id(name_map* map, int max, const char *name)
 
 // count number of positive members in a list.
 // NOTE: list must be guaranteed to end in 0
-unsigned int count_positive(unsigned char *list)
+unsigned int count_positive(const unsigned char *list)
 {
 	unsigned int c;
 
@@ -68,4 +72,17 @@ char *cs_strdup(const char *str)
 		return NULL;
 
 	return (char *)memmove(new, str, len);
+}
+
+// we need this since Windows doesnt have snprintf()
+int cs_snprintf(char *buffer, size_t size, const char *fmt, ...)
+{
+	int ret;
+
+	va_list ap;
+	va_start(ap, fmt);
+	ret = cs_vsnprintf(buffer, size, fmt, ap);
+	va_end(ap);
+
+	return ret;
 }

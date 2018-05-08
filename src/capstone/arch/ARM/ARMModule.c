@@ -12,12 +12,6 @@
 static cs_err init(cs_struct *ud)
 {
 	MCRegisterInfo *mri;
-
-	// verify if requested mode is valid
-	if (ud->mode & ~(CS_MODE_LITTLE_ENDIAN | CS_MODE_ARM |
-				CS_MODE_THUMB | CS_MODE_BIG_ENDIAN))
-		return CS_ERR_MODE;
-
 	mri = cs_mem_malloc(sizeof(*mri));
 
 	ARM_init(mri);
@@ -28,6 +22,7 @@ static cs_err init(cs_struct *ud)
 	ud->reg_name = ARM_reg_name;
 	ud->insn_id = ARM_get_insn_id;
 	ud->insn_name = ARM_insn_name;
+	ud->group_name = ARM_group_name;
 	ud->post_printer = ARM_post_printer;
 
 	if (ud->mode & CS_MODE_THUMB)
@@ -47,7 +42,8 @@ static cs_err option(cs_struct *handle, cs_opt_type type, size_t value)
 			else
 				handle->disasm = ARM_getInstruction;
 
-			handle->mode = value;
+			handle->mode = (cs_mode)value;
+
 			break;
 		case CS_OPT_SYNTAX:
 			ARM_getRegName(handle, (int)value);
@@ -66,9 +62,12 @@ static void destroy(cs_struct *handle)
 
 void ARM_enable(void)
 {
-	arch_init[CS_ARCH_ARM] = init;
-	arch_option[CS_ARCH_ARM] = option;
-	arch_destroy[CS_ARCH_ARM] = destroy;
+	cs_arch_init[CS_ARCH_ARM] = init;
+	cs_arch_option[CS_ARCH_ARM] = option;
+	cs_arch_destroy[CS_ARCH_ARM] = destroy;
+	cs_arch_disallowed_mode_mask[CS_ARCH_ARM] = ~(CS_MODE_LITTLE_ENDIAN |
+		CS_MODE_ARM | CS_MODE_V8 | CS_MODE_MCLASS | CS_MODE_THUMB |
+		CS_MODE_BIG_ENDIAN);
 
 	// support this arch
 	all_arch |= (1 << CS_ARCH_ARM);

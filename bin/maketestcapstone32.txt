@@ -1,0 +1,27 @@
+#.SUFFIXES:.c .o
+#貌似只有用下面这种才能让vscode断下来
+CC=i686-w64-mingw32-gcc -m32
+#SRCS=testcapstone.c\
+
+#OBJS=$(SRCS:.c=.o)
+#EXEC=testcapstone
+ 
+#build:$(OBJS)
+#	$(CC) -o $(EXEC) $(OBJS) capstone.lib
+#	@echo '---------------OK---------------'
+ 
+#.c.o:
+#	$(CC) -Wall -g -o $@ -c $< -I ../src/capstone/include/
+ 
+#clean:
+#	rm -f $(OBJS)
+#	rm -f $(EXEC)
+
+all:testcapstone
+	rm -f testcapstone.o
+
+testcapstone: testcapstone.o
+	${CC} $< -g -o3 -Wall capstone.dll -o $@ 
+
+%.o: %.c
+	${CC} -c $< -g -o $@ -I ../src/capstone/include/

@@ -8,7 +8,10 @@
 extern "C" {
 #endif
 
+#if !defined(_MSC_VER) || !defined(_KERNEL_MODE)
 #include <stdint.h>
+#endif
+
 #include "platform.h"
 
 // GCC SPARC toolchain has a default macro called "sparc" which breaks
@@ -69,10 +72,10 @@ typedef enum sparc_hint {
 
 //> Operand type for instruction's operands
 typedef enum sparc_op_type {
-	SPARC_OP_INVALID = 0,	// Uninitialized.
-	SPARC_OP_REG,	// Register operand.
-	SPARC_OP_IMM,	// Immediate operand.
-	SPARC_OP_MEM,	// Memory operand
+	SPARC_OP_INVALID = 0, // = CS_OP_INVALID (Uninitialized).
+	SPARC_OP_REG, // = CS_OP_REG (Register operand).
+	SPARC_OP_IMM, // = CS_OP_IMM (Immediate operand).
+	SPARC_OP_MEM, // = CS_OP_MEM (Memory operand).
 } sparc_op_type;
 
 // Instruction's operand referring to memory
@@ -96,7 +99,7 @@ typedef struct cs_sparc_op {
 // Instruction structure
 typedef struct cs_sparc {
 	sparc_cc cc;	// code condition for this insn
-	sparc_hint hint;	// branch hint: encoding as bitwise OR of SPARC_HINT_*.
+	sparc_hint hint;	// branch hint: encoding as bitwise OR of sparc_hint.
 	// Number of operands of this instruction, 
 	// or 0 when instruction has no operand.
 	uint8_t op_count;
@@ -194,7 +197,10 @@ typedef enum sparc_reg {
 	SPARC_REG_SP,
 	SPARC_REG_Y,
 
-	SPARC_REG_MAX,   // <-- mark the end of the list of registers
+	// special register
+	SPARC_REG_XCC,
+
+	SPARC_REG_ENDING,   // <-- mark the end of the list of registers
 
 	// extras
 	SPARC_REG_O6 = SPARC_REG_SP,
@@ -220,7 +226,6 @@ typedef enum sparc_insn {
 	SPARC_INS_ARRAY16,
 	SPARC_INS_ARRAY32,
 	SPARC_INS_ARRAY8,
-	SPARC_INS_BA,
 	SPARC_INS_B,
 	SPARC_INS_JMP,
 	SPARC_INS_BMASK,
@@ -460,7 +465,6 @@ typedef enum sparc_insn {
 	SPARC_INS_SUBXCC,
 	SPARC_INS_SUB,
 	SPARC_INS_SWAP,
-	SPARC_INS_TA,
 	SPARC_INS_TADDCCTV,
 	SPARC_INS_TADDCC,
 	SPARC_INS_T,
@@ -484,14 +488,23 @@ typedef enum sparc_insn {
 	SPARC_INS_XORCC,
 	SPARC_INS_XOR,
 
-	SPARC_INS_MAX,   // <-- mark the end of the list of instructions
+	// alias instructions
+	SPARC_INS_RET,
+	SPARC_INS_RETL,
+
+	SPARC_INS_ENDING,   // <-- mark the end of the list of instructions
 } sparc_insn;
 
 //> Group of SPARC instructions
 typedef enum sparc_insn_group {
-	SPARC_GRP_INVALID = 0,
+	SPARC_GRP_INVALID = 0, // = CS_GRP_INVALID
 
-	SPARC_GRP_HARDQUAD,
+	//> Generic groups
+	// all jump instructions (conditional+direct+indirect jumps)
+	SPARC_GRP_JUMP,	// = CS_GRP_JUMP
+
+	//> Architecture-specific groups
+	SPARC_GRP_HARDQUAD = 128,
 	SPARC_GRP_V9,
 	SPARC_GRP_VIS,
 	SPARC_GRP_VIS2,
@@ -499,9 +512,7 @@ typedef enum sparc_insn_group {
 	SPARC_GRP_32BIT,
 	SPARC_GRP_64BIT,
 
-	SPARC_GRP_JUMP,	// all jump instructions (conditional+direct+indirect jumps)
-
-	SPARC_GRP_MAX,   // <-- mark the end of the list of groups
+	SPARC_GRP_ENDING,   // <-- mark the end of the list of groups
 } sparc_insn_group;
 
 #ifdef __cplusplus

@@ -10,12 +10,7 @@ Issues to be solved in next versions
 
 - More optimization for better performance.
 
-- Support more operand details for Arm, Arm64, Mips & X86, especially focus on
-  non-standard instructions.
-
-- Reduce the binary size of libraries, so Capstone can be embeded into products.
-
 
 [Bindings]
 
-- OCaml binding are broken due to many API changes. This should be fixed ASAP.
+- OCaml binding is working, but still needs to support the core API better.

@@ -16,7 +16,7 @@
 
 #ifdef CAPSTONE_HAS_MIPS
 
-#include <inttypes.h>
+#include <platform.h>
 #include <stdlib.h>
 #include <stdio.h>	// debug
 #include <string.h>
@@ -82,8 +82,8 @@ typedef enum Mips_CondCode {
 #define GET_INSTRINFO_ENUM
 #include "MipsGenInstrInfo.inc"
 
-static char *getRegisterName(unsigned RegNo);
-static void printInstruction(MCInst *MI, SStream *O, MCRegisterInfo *MRI);
+static const char *getRegisterName(unsigned RegNo);
+static void printInstruction(MCInst *MI, SStream *O, const MCRegisterInfo *MRI);
 
 static void set_mem_access(MCInst *MI, bool status)
 {
@@ -108,7 +108,7 @@ static bool isReg(MCInst *MI, unsigned OpNo, unsigned R)
 			MCOperand_getReg(MCInst_getOperand(MI, OpNo)) == R);
 }
 
-static char* MipsFCCToString(Mips_CondCode CC)
+static const char* MipsFCCToString(Mips_CondCode CC)
 {
 	switch (CC) {
 		default: return 0;	// never reach
@@ -152,49 +152,16 @@ static void printRegName(SStream *OS, unsigned RegNo)
 	SStream_concat(OS, "$%s", getRegisterName(RegNo));
 }
 
-static void printSaveRestore(MCInst *MI, SStream *O)
-{
-	unsigned i, e;
-	for (i = 0, e = MCInst_getNumOperands(MI); i != e; ++i) {
-		if (i != 0)
-			SStream_concat0(O, ", ");
-		if (MCOperand_isReg(MCInst_getOperand(MI, i)))
-			printRegName(O, MCOperand_getReg(MCInst_getOperand(MI, i)));
-		else
-			printUnsignedImm(MI, i, O);
-	}
-}
-
 void Mips_printInst(MCInst *MI, SStream *O, void *info)
 {
 	char *mnem;
 
 	switch (MCInst_getOpcode(MI)) {
 		default: break;
-		case Mips_RDHWR:
-		case Mips_RDHWR64:
-			SStream_concat0(O, ".set\tpush\n");
-			SStream_concat0(O, ".set\tmips32r2\n");
-			break;
 		case Mips_Save16:
-			SStream_concat0(O, "\tsave\t");
-			printSaveRestore(MI, O);
-			SStream_concat0(O, " # 16 bit inst\n");
-			return;
 		case Mips_SaveX16:
-			SStream_concat0(O, "\tsave\t");
-			printSaveRestore(MI, O);
-			SStream_concat0(O, "\n");
-			return;
 		case Mips_Restore16:
-			SStream_concat0(O, "\trestore\t");
-			printSaveRestore(MI, O);
-			SStream_concat0(O, " # 16 bit inst\n");
-			return;
 		case Mips_RestoreX16:
-			SStream_concat0(O, "\trestore\t");
-			printSaveRestore(MI, O);
-			SStream_concat0(O, "\n");
 			return;
 	}
 
@@ -202,8 +169,9 @@ void Mips_printInst(MCInst *MI, SStream *O, void *info)
 	mnem = printAliasInstr(MI, O, info);
 	if (!mnem) {
 		mnem = printAlias(MI, O);
-		if (!mnem)
+		if (!mnem) {
 			printInstruction(MI, O, NULL);
+		}
 	}
 
 	if (mnem) {
@@ -211,19 +179,16 @@ void Mips_printInst(MCInst *MI, SStream *O, void *info)
 		MCInst_setOpcodePub(MI, Mips_map_insn(mnem));
 		cs_mem_free(mnem);
 	}
-
-	switch (MCInst_getOpcode(MI)) {
-		default: break;
-		case Mips_RDHWR:
-		case Mips_RDHWR64:
-			SStream_concat0(O, "\n.set\tpop");
-			break;
-	}
 }
 
 static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 {
-	MCOperand *Op = MCInst_getOperand(MI, OpNo);
+	MCOperand *Op;
+
+	if (OpNo >= MI->size)
+		return;
+
+	Op = MCInst_getOperand(MI, OpNo);
 	if (MCOperand_isReg(Op)) {
 		unsigned int reg = MCOperand_getReg(Op);
 		printRegName(O, reg);
@@ -237,9 +202,7 @@ static void printOperand(MCInst *MI, unsigned OpNo, SStream *O)
 				MI->flat_insn->detail->mips.op_count++;
 			}
 		}
-	}
-
-	if (MCOperand_isImm(Op)) {
+	} else if (MCOperand_isImm(Op)) {
 		int64_t imm = MCOperand_getImm(Op);
 		if (MI->csh->doing_mem) {
 			if (imm) {	// only print Imm offset if it is not 0
@@ -352,14 +315,14 @@ static void printFCCOperand(MCInst *MI, int opNum, SStream *O)
 	SStream_concat0(O, MipsFCCToString((Mips_CondCode)MCOperand_getImm(MO)));
 }
 
-static char *printAlias1(char *Str, MCInst *MI, unsigned OpNo, SStream *OS)
+static char *printAlias1(const char *Str, MCInst *MI, unsigned OpNo, SStream *OS)
 {
 	SStream_concat(OS, "%s\t", Str);
 	printOperand(MI, OpNo, OS);
 	return cs_strdup(Str);
 }
 
-static char *printAlias2(char *Str, MCInst *MI,
+static char *printAlias2(const char *Str, MCInst *MI,
 		unsigned OpNo0, unsigned OpNo1, SStream *OS)
 {
 	char *tmp;
@@ -385,6 +348,11 @@ static char *printAlias(MCInst *MI, SStream *OS)
 			if (isReg(MI, 1, Mips_ZERO))
 				return printAlias2("beqz", MI, 0, 2, OS);
 			return NULL;
+		case Mips_BEQL:
+			// beql $r0, $zero, $L2 => beqzl $r0, $L2
+			if (isReg(MI, 0, Mips_ZERO) && isReg(MI, 1, Mips_ZERO))
+				return printAlias2("beqzl", MI, 0, 2, OS);
+			return NULL;
 		case Mips_BEQ64:
 			// beq $r0, $zero, $L2 => beqz $r0, $L2
 			if (isReg(MI, 1, Mips_ZERO_64))
@@ -394,6 +362,11 @@ static char *printAlias(MCInst *MI, SStream *OS)
 			// bne $r0, $zero, $L2 => bnez $r0, $L2
 			if (isReg(MI, 1, Mips_ZERO))
 				return printAlias2("bnez", MI, 0, 2, OS);
+			return NULL;
+		case Mips_BNEL:
+			// bnel $r0, $zero, $L2 => bnezl $r0, $L2
+			if (isReg(MI, 1, Mips_ZERO))
+				return printAlias2("bnezl", MI, 0, 2, OS);
 			return NULL;
 		case Mips_BNE64:
 			// bne $r0, $zero, $L2 => bnez $r0, $L2

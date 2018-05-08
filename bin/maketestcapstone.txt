@@ -16,8 +16,12 @@
 #	rm -f $(OBJS)
 #	rm -f $(EXEC)
 
+all:testcapstone
+	rm -f testcapstone.o
+
 testcapstone: testcapstone.o
-	${CC} $< -o3 -Wall capstone.lib -o $@ 
+	${CC} $< -o3 -Wall capstone-x64.lib -o $@ 
+
 
 %.o: %.c
 	${CC} -c $< -g -o $@ -I ../src/capstone/include/

@@ -19,8 +19,9 @@
 #ifndef CS_MCINST_H
 #define CS_MCINST_H
 
+#if !defined(_MSC_VER) || !defined(_KERNEL_MODE)
 #include <stdint.h>
-
+#endif
 #include "include/capstone.h"
 
 typedef struct MCInst MCInst;
@@ -55,8 +56,6 @@ bool MCOperand_isFPImm(const MCOperand *op);
 
 bool MCOperand_isInst(const MCOperand *op);
 
-void MCInst_clear(MCInst *m);
-
 /// getReg - Returns the register number.
 unsigned MCOperand_getReg(const MCOperand *op);
 
@@ -90,19 +89,23 @@ MCOperand *MCOperand_CreateImm1(MCInst *inst, int64_t Val);
 /// MCInst - Instances of this class represent a single low-level machine
 /// instruction.
 struct MCInst {
+	unsigned OpcodePub;
+	uint8_t size;	// number of operands
+	bool has_imm;	// indicate this instruction has an X86_OP_IMM operand - used for ATT syntax
+	uint8_t op1_size; // size of 1st operand - for X86 Intel syntax
 	unsigned Opcode;
 	MCOperand Operands[48];
-	unsigned OpcodePub;
-	unsigned size;	// number of operands
 	cs_insn *flat_insn;	// insn to be exposed to public
 	uint64_t address;	// address of this insn
 	cs_struct *csh;	// save the main csh
-	uint8_t x86_imm_size;	// save immediate size to print immediate properly
+	uint8_t x86opsize;	// opsize for [mem] operand
 
-	// (Optional) instruction prefix, which can be up to 5 bytes.
+	// (Optional) instruction prefix, which can be up to 4 bytes.
 	// A prefix byte gets value 0 when irrelevant.
 	// This is copied from cs_x86 struct
 	uint8_t x86_prefix[4];
+	uint8_t imm_size;	// immediate size for X86_OP_IMM operand
+	bool writeback;	// writeback for ARM
 };
 
 void MCInst_Init(MCInst *inst);

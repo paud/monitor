@@ -229,20 +229,20 @@ bool Sparc_getInstruction(csh ud, const uint8_t *code, size_t code_len, MCInst *
 	
 	Result = readInstruction32(code, code_len, &Insn);
 	if (Result == MCDisassembler_Fail)
-		return MCDisassembler_Fail;
+		return false;
 
 	if (MI->flat_insn->detail) {
-		memset(&MI->flat_insn->detail->sparc, 0, sizeof(cs_sparc));
+		memset(MI->flat_insn->detail, 0, sizeof(cs_detail));
 	}
 
 	Result = decodeInstruction_4(DecoderTableSparc32, MI, Insn, address,
 			(MCRegisterInfo *)info, 0);
 	if (Result != MCDisassembler_Fail) {
 		*size = 4;
-		return Result;
+		return true;
 	}
 
-	return MCDisassembler_Fail;
+	return false;
 }
 
 typedef DecodeStatus (*DecodeFunc)(MCInst *MI, unsigned insn, uint64_t Address,
@@ -255,7 +255,7 @@ static DecodeStatus DecodeMem(MCInst *MI, unsigned insn, uint64_t Address,
 	DecodeStatus status;
 	unsigned rd = fieldFromInstruction_4(insn, 25, 5);
 	unsigned rs1 = fieldFromInstruction_4(insn, 14, 5);
-	bool isImm = fieldFromInstruction_4(insn, 13, 1);
+	bool isImm = fieldFromInstruction_4(insn, 13, 1) != 0;
 	unsigned rs2 = 0;
 	unsigned simm13 = 0;
 

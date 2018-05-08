@@ -12,11 +12,6 @@
 static cs_err init(cs_struct *ud)
 {
 	MCRegisterInfo *mri;
-
-	// verify if requested mode is valid
-	if (ud->mode & ~(CS_MODE_BIG_ENDIAN | CS_MODE_V9))
-		return CS_ERR_MODE;
-
 	mri = cs_mem_malloc(sizeof(*mri));
 
 	Sparc_init(mri);
@@ -29,6 +24,7 @@ static cs_err init(cs_struct *ud)
 	ud->reg_name = Sparc_reg_name;
 	ud->insn_id = Sparc_get_insn_id;
 	ud->insn_name = Sparc_insn_name;
+	ud->group_name = Sparc_group_name;
 
 	return CS_ERR_OK;
 }
@@ -36,7 +32,11 @@ static cs_err init(cs_struct *ud)
 static cs_err option(cs_struct *handle, cs_opt_type type, size_t value)
 {
 	if (type == CS_OPT_SYNTAX)
-		handle->syntax = value;
+		handle->syntax = (int) value;
+
+	if (type == CS_OPT_MODE) {
+		handle->mode = (cs_mode)value;
+	}
 
 	return CS_ERR_OK;
 }
@@ -47,9 +47,11 @@ static void destroy(cs_struct *handle)
 
 void Sparc_enable(void)
 {
-	arch_init[CS_ARCH_SPARC] = init;
-	arch_option[CS_ARCH_SPARC] = option;
-	arch_destroy[CS_ARCH_SPARC] = destroy;
+	cs_arch_init[CS_ARCH_SPARC] = init;
+	cs_arch_option[CS_ARCH_SPARC] = option;
+	cs_arch_destroy[CS_ARCH_SPARC] = destroy;
+	cs_arch_disallowed_mode_mask[CS_ARCH_SPARC] =
+		~(CS_MODE_BIG_ENDIAN | CS_MODE_V9);
 
 	// support this arch
 	all_arch |= (1 << CS_ARCH_SPARC);
