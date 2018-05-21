@@ -115,6 +115,8 @@ void config_read1(config_t *cfg)
     memset(cfg, 0, sizeof(config_t));
 
     FILE *fp = fopen(config_fname, "rb");
+    message_box(NULL, config_fname,
+                    "tt", 0);
     if (fp == NULL)
     {
         message_box(NULL, "Error fetching configuration file! This is a "
@@ -257,7 +259,7 @@ void monitor_init(HMODULE module_handle)
 
     misc_set_monitor_options(cfg.track, cfg.mode, cfg.trigger);
 }
-int hookcount=0;
+int hookcount = 0;
 void monitor_hook(const char *library, void *module_handle)
 {
     // Initialize data about each hook.
@@ -283,19 +285,19 @@ void monitor_hook(const char *library, void *module_handle)
         // already have been loaded. In that case we want to hook the function
         // forwarder right away. (Note that the library member of the hook
         // object is updated in the case of retrying).
-        if (strstr(h->funcname, "memcpy"))
+        /*if (strstr(h->funcname, "memcpy"))
         {
-            MessageBox(0,"before memcpy","info",MB_OK);
+            //MessageBox(0,"before memcpy","info",MB_OK);
             while (hook(h, module_handle) == 1)
             ;
-            MessageBox(0,"after memcpy","info",MB_OK);
+            //MessageBox(0,"after memcpy","info",MB_OK);
         }
         else
-        {
-            while (hook(h, module_handle) == 1)
-                ;
-        }
-        hookcount++;
+        {*/
+        while (hook(h, module_handle) == 1)
+            ;
+        //}
+        /**/hookcount++;
         char a[512] = {0};
         char b[4]={0};
         itoa(hookcount,b,10);
@@ -307,7 +309,7 @@ void monitor_hook(const char *library, void *module_handle)
         log_action(a);
         //if (hookcount==30){
             //MessageBox(0,a,"info",MB_OK);
-        //}
+        //}*/
     }
 }
 
@@ -344,7 +346,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
     {
         monitor_init(hModule);
         monitor_hook(NULL, NULL);
-        pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
+        //pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
     }
 
     return TRUE;
@@ -363,8 +365,14 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         {
             char buf[512] = {0};
             DWORD dwSize = 256;
+#if __x86_64__
+            //GetUserName(0x10002,buf, &dwSize);
+            GetUserName(buf, &dwSize);
+            MessageBox(hwnd, buf, "提示Win64", MB_OK | MB_ICONINFORMATION);
+#else
             GetUserNameA(buf, &dwSize);
             MessageBox(hwnd, buf, "提示", MB_OK | MB_ICONINFORMATION);
+#endif
         }
         break;
         case IDB_THREE:
@@ -372,9 +380,9 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             char *a = "WSAAccept";
             char d[20];
             memcpy(d, a, strlen(a));
-            if (strstr(a, "WSA1"))
+            if (strstr(a, "WSA"))
             {
-                MessageBox(hwnd, "您点击了第三个按钮。", "提示", MB_OK | MB_ICONINFORMATION);
+                MessageBox(hwnd, d, a, MB_OK | MB_ICONINFORMATION);
             }
         }
         break;

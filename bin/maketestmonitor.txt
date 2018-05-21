@@ -59,3 +59,4 @@ testmonitor: testmonitor.o $(SRCOBJ64) $(HOOKOBJ64) $(FLAGOBJ64) \
 clean:
 	rm -rf $(SRCOBJ64) $(BSONOBJ64)
 
+#编译前使用 src/del_o.bat src/bson/del_o.bat把 .o文件清理一下
