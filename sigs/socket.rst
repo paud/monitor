@@ -113,6 +113,12 @@ Interesting::
     s ip
     i port
 
+Post::
+
+   if(netsimulation == 1) {
+        ret = 0;
+   }
+   
 Logging::
 
     s ip_address ip

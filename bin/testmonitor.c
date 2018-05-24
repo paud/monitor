@@ -36,6 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IDB_TWO 3302
 #define IDB_THREE 3303
 
+//char netsimulation[5] = {0};
+
 static uint32_t _parse_mode(const char *mode)
 {
     uint32_t ret = HOOK_MODE_ALL;
@@ -115,8 +117,7 @@ void config_read1(config_t *cfg)
     memset(cfg, 0, sizeof(config_t));
 
     FILE *fp = fopen(config_fname, "rb");
-    message_box(NULL, config_fname,
-                    "tt", 0);
+
     if (fp == NULL)
     {
         message_box(NULL, "Error fetching configuration file! This is a "
@@ -230,6 +231,7 @@ void monitor_init(HMODULE module_handle)
     diffing_init(cfg.hashes_path, cfg.diffing_enable);
 
     copy_init();
+
     log_init(cfg.logpipe, cfg.track);
     ignore_init();
 
@@ -297,10 +299,10 @@ void monitor_hook(const char *library, void *module_handle)
         while (hook(h, module_handle) == 1)
             ;
         //}
-        /**/hookcount++;
+        /**/ hookcount++;
         char a[512] = {0};
-        char b[4]={0};
-        itoa(hookcount,b,10);
+        char b[4] = {0};
+        itoa(hookcount, b, 10);
         strcat(a, b);
         strcat(a, ":");
         strcat(a, h->library);
@@ -308,7 +310,7 @@ void monitor_hook(const char *library, void *module_handle)
         strcat(a, h->funcname);
         log_action(a);
         //if (hookcount==30){
-            //MessageBox(0,a,"info",MB_OK);
+        //MessageBox(0,a,"info",MB_OK);
         //}*/
     }
 }
@@ -346,7 +348,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
     {
         monitor_init(hModule);
         monitor_hook(NULL, NULL);
-        //pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
+        pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
     }
 
     return TRUE;
@@ -377,18 +379,94 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         break;
         case IDB_THREE:
         {
-            char *a = "WSAAccept";
+            /*char *a = "WSAAccept";
             char d[20];
             memcpy(d, a, strlen(a));
             if (strstr(a, "WSA"))
             {
                 MessageBox(hwnd, d, a, MB_OK | MB_ICONINFORMATION);
             }
+            char *sect;
+
+            char *key;
+            char value[256];
+
+            char stadate[10];
+
+            char enddate[10];
+
+            //==================加载配置文件
+
+            const char *file = "C:\\Windows\\system32\\connect.ini";
+
+            //Hook_Debug_TxData("加载配置...");
+
+            //printf("load config file %snn", file);
+
+            iniFileLoad(file);
+
+            //加载IP地址和端口
+
+            sect = "SIMULATION";
+
+            key = "netsimulation";
+
+            iniGetString(sect, key, netsimulation, sizeof(netsimulation), "notfound!");
+            iniFileFree();
+            if (strcmp(netsimulation, L"on"))
+            {
+                MessageBox(hwnd, netsimulation, netsimulation, MB_OK | MB_ICONINFORMATION);
+            }
+            static wchar_t g_log_pipename[MAX_PATH];
+            static HANDLE g_log_handle;
+            DWORD lasterror;
+            char tt[32];
+            wcsncpyA(g_log_pipename, "\\\\.\\PIPE\\monitortestlog", MAX_PATH);
+            do
+            {
+                // TODO Use NtCreateFile instead of CreateFileW.
+                g_log_handle = CreateFileW(g_log_pipename, GENERIC_READ | GENERIC_WRITE,
+                                           FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                                           NULL, NULL);
+                lasterror=GetLastError();
+                sprintf(tt,"%d",lasterror);
+                wcsncpyA(g_log_pipename, tt, MAX_PATH);
+
+                if (lasterror == ERROR_PIPE_BUSY)
+                    MessageBoxW(0, g_log_pipename, tt, 0);
+                sleep(50);
+            } while (g_log_handle == INVALID_HANDLE_VALUE);
+            MessageBoxW(0, g_log_pipename, L"pass", 0);*/
+            if (netsimulation == 1)
+            {
+                //ret = 0;
+            }
+            struct addrinfo *res; //<netdb.h>
+            struct addrinfo hints;
+            memset(&hints, 0, sizeof(hints));
+            hints.ai_family = PF_UNSPEC; // AF | PF
+            hints.ai_socktype = SOCK_STREAM;
+            //if (getaddrinfo("127.0.0.1", 80, &hints, &res) == -1) //会在堆上创建一种叫名字资源的新数据结构
+            //    perror("error");
+            int d_sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+            if (d_sock == -1)
+                perror("error");
+            int c = connect(d_sock, res->ai_addr, res->ai_addrlen);
+            //freeaddrinfo(res); //释放堆空间
+            if (c == -1)
+            {
+            }
+            return d_sock;
         }
         break;
         case IDB_ONE:
         {
-            DWORD h = LoadLibrary("b90042txt.dll");
+#if __x86_64__
+            DWORD h = LoadLibrary("b90042txt64.dll");
+#else
+            DWORD h = LoadLibrary("b90042txt86.dll");
+#endif
+            //DWORD h = LoadLibrary("b90042txt.dll");
             //DWORD h = LoadLibrary("advapi32.dll"); //关于系统dll,这里会根据便宜出的PE格式自动调用x64 或 x86的dll
             //DllMain(hwnd, DLL_PROCESS_ATTACH, NULL);  //从主函数进入跟踪
             DllMain(h, DLL_PROCESS_ATTACH, NULL);

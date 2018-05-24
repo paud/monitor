@@ -1,0 +1,16 @@
+GetTimeZoneInformation Î´Àë¿ª in misc.rst
+regopenkey ³ö´í in registry.rst
+
+Entered FindResourceW
+
+Entered RtlDispatchException
+
+Leaving RtlDispatchException  Î´Àë¿ªFindResourceW
+ in resource.rst
+
+Entered SetUnhandledExceptionFilter
+
+Entered RtlDispatchException
+
+Leaving RtlDispatchException
+  in exception.rst

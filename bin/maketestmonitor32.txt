@@ -1,7 +1,7 @@
 .SUFFIXES:.c .o .h
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
 	-I ../inc/ -I ../objects/code/ -I ../src/bson/ -I ../src/sha1/ -I ../src/capstone/include/ #-mwindows
-LDFLAGS = -lshlwapi -lwsock32 -lgdi32 -fexec-charset=gbk
+LDFLAGS = -lshlwapi -lwsock32 -lgdi32 -lws2_32 -fexec-charset=gbk
 
 CC=i686-w64-mingw32-gcc -m32
 

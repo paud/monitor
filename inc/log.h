@@ -26,6 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bson.h"
 #include "native.h"
 
+extern int netsimulation; //全局变量，用于表示是否开启模拟网络
+
 void log_init(const char *pipe_name, int track);
 
 void log_api(uint32_t index, int is_success, uintptr_t return_value,

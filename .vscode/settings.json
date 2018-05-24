@@ -16,7 +16,11 @@
         "type_traits": "c",
         "xstddef": "c",
         "xtr1common": "c",
-        "xmemory0": "c"
+        "xmemory0": "c",
+        "native.h": "c",
+        "inirw.h": "c",
+        "ws2tcpip.h": "c",
+        "diffing.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }
