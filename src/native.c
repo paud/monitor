@@ -481,9 +481,10 @@ NTSTATUS transact_named_pipe(HANDLE pipe_handle,
 
     IO_STATUS_BLOCK status_block;
 
-    NTSTATUS ret = pNtFsControlFile(pipe_handle, NULL, NULL, NULL,
+    /*NTSTATUS ret = pNtFsControlFile(pipe_handle, NULL, NULL, NULL,
         &status_block, FSCTL_PIPE_TRANSCEIVE, inbuf, inbufsz, outbuf,
-        outbufsz);
+        outbufsz);*/
+    NTSTATUS ret = write_file(pipe_handle, inbuf, 10, &written);
     if(ret == STATUS_PENDING) {
         ret = pNtWaitForSingleObject(pipe_handle, FALSE, NULL);
         if(NT_SUCCESS(ret) != FALSE) {

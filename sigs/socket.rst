@@ -145,6 +145,20 @@ Logging::
     i sent ret
     !b buffer (uintptr_t)(ret > 0 ? ret : 0), buf
 
+Post::
+
+    char *tmpstr;
+    char *delim = " ";
+    char *p;
+    printf("%s ", strtok(char, delim));
+    while (p = strtok(NULL, delim))
+        printf("%s ", p);
+    printf("\n");
+    pipe("FILE_NEW:%Z", filepath);
+  
+
+    free_unicode_buffer(filepath);
+
 
 sendto
 ======

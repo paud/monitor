@@ -20,7 +20,8 @@
         "native.h": "c",
         "inirw.h": "c",
         "ws2tcpip.h": "c",
-        "diffing.h": "c"
+        "diffing.h": "c",
+        "stdlib.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

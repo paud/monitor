@@ -56,7 +56,7 @@ static void checknetsimulation()
 {
     char *sect;
     char *key;
-    char value[256]={0};
+    char value[256] = {0};
     //==================加载配置文件
     const char *file = "C:\\Windows\\system32\\connect.ini";
     iniFileLoad(file);
@@ -66,7 +66,7 @@ static void checknetsimulation()
     iniFileFree();
     if (strcmp(value, "on") == 0)
     {
-        netsimulation=1;
+        netsimulation = 1;
     }
 }
 
@@ -79,6 +79,9 @@ static int open_handles()
                                    FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
                                    FILE_FLAG_WRITE_THROUGH, NULL);
 
+        /* g_log_handle = CreateFileW(g_log_pipename, GENERIC_READ | GENERIC_WRITE,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);*/
         sleep(50);
     } while (g_log_handle == INVALID_HANDLE_VALUE);
 

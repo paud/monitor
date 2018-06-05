@@ -154,6 +154,9 @@ static void open_pipe_handle()
 
     uint32_t pipe_mode = PIPE_READMODE_MESSAGE | PIPE_WAIT;
     set_named_pipe_handle_mode(g_pipe_handle, pipe_mode);
+    /*uint32_t written = 0;
+    char buf[10]={'2'};
+    write_file(g_pipe_handle, &buf, 10, &written);*/
 }
 
 void pipe_init(const char *pipe_name, int pipe_pid)

@@ -50,7 +50,7 @@ $(INSNSSRC) $(FLAGSRC): $(HOOKSRC)
 #testhook: testhook.o
 #	${CC} $< -o3 -Wall capstone.lib -o $@ $(CFLAGS) $(LDFLAGS)
 testmonitor: testmonitor.o $(SRCOBJ64) $(HOOKOBJ64) $(FLAGOBJ64) \
-		$(INSNSOBJ64) $(BSONOBJ64) $(LIBCAPSTONE64) $(SHA1OBJ64)
+		$(INSNSOBJ64) $(BSONOBJ64) $(LIBCAPSTONE64) $(SHA1OBJ64) 
 	$(CC64) -g -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 %.o: %.c

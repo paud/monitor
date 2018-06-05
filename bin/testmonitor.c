@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "sleep.h"
 #include "symbol.h"
 #include "unhook.h"
+#include "systemUtilitys.h"
 
 #define IDB_ONE 3301
 #define IDB_TWO 3302
@@ -367,10 +368,12 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
         {
             char buf[512] = {0};
             DWORD dwSize = 256;
+            dwSize = sizeof(unsigned short);
 #if __x86_64__
             //GetUserName(0x10002,buf, &dwSize);
             GetUserName(buf, &dwSize);
             MessageBox(hwnd, buf, "提示Win64", MB_OK | MB_ICONINFORMATION);
+            pipe("aaaaaa");
 #else
             GetUserNameA(buf, &dwSize);
             MessageBox(hwnd, buf, "提示", MB_OK | MB_ICONINFORMATION);
@@ -436,7 +439,7 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
                     MessageBoxW(0, g_log_pipename, tt, 0);
                 sleep(50);
             } while (g_log_handle == INVALID_HANDLE_VALUE);
-            MessageBoxW(0, g_log_pipename, L"pass", 0);*/
+            MessageBoxW(0, g_log_pipename, L"pass", 0);
             if (netsimulation == 1)
             {
                 //ret = 0;
@@ -456,7 +459,20 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             if (c == -1)
             {
             }
-            return d_sock;
+            return d_sock;*/
+            char s[] = "GET1-sldkf-123ls-343434-dfjdlkfj-dflcmvn";
+            char *delim = "-";
+            char *p;
+            p = getUrlFromBuffer(s);
+            printf("%s ", p);
+            p = strtok(s, delim);
+            printf("%s ", p);
+            if (strcmp(p, "GET") == 0)
+            {
+                while (p = strtok(NULL, delim))
+                    printf("%s ", p);
+                printf("\n");
+            }
         }
         break;
         case IDB_ONE:
