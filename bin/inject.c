@@ -22,7 +22,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <windows.h>
 #include <tlhelp32.h>
 #include <shlwapi.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include "../inc/ntapi.h"
+
+//#include "SPUtils.h"
 
 #define INJECT_NONE 0
 #define INJECT_CRT  1
@@ -39,6 +44,9 @@ typedef struct _dump_t {
     uint32_t type;
     uint32_t protect;
 } dump_t;
+
+typedef uint64_t pointer;
+
 
 static int verbose = 0;
 
@@ -509,6 +517,36 @@ int main()
 {
     LPWSTR *argv; int argc;
 
+    //PStringList sl=TStringList_Create();
+    //sl->loadFromFile((pointer)sl,"abcd.txt");
+    char* path="f:/abc.txt";
+    char* mode="rt+";
+    /*
+    r：只读方式打开，文件必须存在
+    r+：可读写，必须存在
+    rb+：打开二进制文件，可以读写
+    rt+:打开文本文件，可读写
+    w:只写，文件存在则文件长度清0，文件不存在则建立该文件
+    w+:可读写，文件存在则文件长度清0，文件不存在则建立该文件
+    a:附加方式打开只写，不存在建立该文件，存在写入的数据加到文件尾，EOF符保留
+    a+：附加方式打开可读写，不存在建立该文件，存在写入的数据加到文件尾，EOF符不保留
+    wb：打开二进制文件，只写
+    wb+:打开或建立二进制文件，可读写
+    wt+:打开或建立文本文件，可读写
+    at+:打开文本文件，可读写，写的数据加在文本末尾
+    ab+:打开二进制文件，可读写，写的数据加在文件末尾
+    */
+
+    FILE *fp;  
+    fp=fopen(path, "at+"); 
+    if( fp == NULL)
+    {
+        fprintf(stderr , "fopen() failed . errno = %d\n",errno);
+        exit(1);
+    
+    }
+    fwrite("123\r\n",1,5,fp);
+
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if(argv == NULL) {
         error("Error parsing commandline options!\n");
@@ -563,6 +601,9 @@ int main()
     BOOL cfgcp=FALSE;
 
     for (int idx = 1; idx < argc; idx++) {
+        fwrite(argv[idx],1,26,fp);
+        fwrite("\r\n",1,2,fp);
+
         if(wcscmp(argv[idx], L"--crt") == 0) {
             inj_mode = INJECT_CRT;
             continue;
@@ -601,6 +642,8 @@ int main()
 
         if(wcscmp(argv[idx], L"--curdir") == 0) {
             curdir = argv[++idx];
+            fwrite(argv[idx],1,26,fp);
+            fwrite("\r\n",1,2,fp);
             continue;
         }
 
@@ -673,6 +716,7 @@ int main()
         error("[-] Found unsupported argument: %S\n", argv[idx]);
         return 1;
     }
+    fwrite("argAfter:\r\n",1,11,fp);
 
     // Dump memory of a process.
     if(dump_path != NULL && pid != 0) {
@@ -842,5 +886,7 @@ int main()
 
     // Report the process and thread identifiers.
     printf("%d %d", pid, tid);
+
+    fclose(fp);
     return 0;
 }

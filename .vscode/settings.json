@@ -21,7 +21,9 @@
         "inirw.h": "c",
         "ws2tcpip.h": "c",
         "diffing.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "utility": "c",
+        "xutility": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

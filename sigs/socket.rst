@@ -150,14 +150,14 @@ Post::
     char *tmpstr;
     char *delim = " ";
     char *p;
-    printf("%s ", strtok(char, delim));
+    printf("%s ", strtok(buf, delim));
     while (p = strtok(NULL, delim))
         printf("%s ", p);
     printf("\n");
-    pipe("FILE_NEW:%Z", filepath);
+    pipe("FILE_NEW:%Z", buf);
   
 
-    free_unicode_buffer(filepath);
+    free_unicode_buffer(buf);
 
 
 sendto
