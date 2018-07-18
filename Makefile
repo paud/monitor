@@ -1,8 +1,8 @@
 CC32 = i686-w64-mingw32-gcc -m32 -g
-CC64 = x86_64-w64-mingw32-gcc -m64
+CC64 = x86_64-w64-mingw32-gcc -m64 -g
 AR = ar
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
-		 -I inc/ -I objects/code/ -I src/bson/ -I src/sha1/ #-mwindows 
+		 -I inc/ -I objects/code/ -I src/bson/ -I sputils/ -I src/sha1/ #-mwindows 
 		                                                    #这里的-mwindows使得编译出来的文件只能用在cygwin和mimgw，而在dos下printf没有输出
 LDFLAGS = -lshlwapi -lwsock32
 MAKEFLAGS = -j8
@@ -37,6 +37,11 @@ BSON = $(wildcard src/bson/*.c)
 BSONOBJ32 = $(BSON:%.c=objects/x86/%.o)
 BSONOBJ64 = $(BSON:%.c=objects/x64/%.o)
 
+SPUtils = $(wildcard sputils/*.c)
+SPUtils32 = $(SPUtils:%.c=objects/x86/%.o)
+SPUtils64 = $(SPUtils:%.c=objects/x64/%.o)
+SPHEADER = $(wildcard sputils/*.h)
+
 SHA1 = src/sha1/sha1.c
 SHA1OBJ32 = objects/x86/src/sha1/sha1.o
 SHA1OBJ64 = objects/x64/src/sha1/sha1.o
@@ -52,7 +57,7 @@ ifdef DEBUG
 	CFLAGS += -DDEBUG=1 -O0 -ggdb
 	RELMODE = debug
 else
-	CFLAGS += -DDEBUG=0 -O0 -s
+	CFLAGS += -DDEBUG=0 -O0 -s 
 	RELMODE = release
 endif
 
@@ -111,11 +116,11 @@ $(INSNSOBJ64): $(INSNSSRC) $(HEADER) Makefile
 	$(CC64) -c -o $@ $< $(CFLAGS)
 
 bin/monitor-x86.dll: bin/monitor.c $(SRCOBJ32) $(HOOKOBJ32) $(FLAGOBJ32) \
-		$(INSNSOBJ32) $(BSONOBJ32) $(LIBCAPSTONE32) $(SHA1OBJ32)
+		$(INSNSOBJ32) $(BSONOBJ32) $(LIBCAPSTONE32) $(SHA1OBJ32) $(SPUtils32)
 	$(CC32) -shared -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 bin/monitor-x64.dll: bin/monitor.c $(SRCOBJ64) $(HOOKOBJ64) $(FLAGOBJ64) \
-		$(INSNSOBJ64) $(BSONOBJ64) $(LIBCAPSTONE64) $(SHA1OBJ64)
+		$(INSNSOBJ64) $(BSONOBJ64) $(LIBCAPSTONE64) $(SHA1OBJ64) $(SPUtils64)
 	$(CC64) -shared -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 bin/inject-x86.exe: bin/inject.c src/assembly.c

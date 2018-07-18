@@ -79,6 +79,7 @@ void config_read(config_t *cfg)
 {
     char buf[512], config_fname[MAX_PATH];
     sprintf(config_fname, "C:\\cuckoo_%lu.ini", GetCurrentProcessId());
+    //sprintf(config_fname, "F:\\analyst.cfg", GetCurrentProcessId());
 
     memset(cfg, 0, sizeof(config_t));
 

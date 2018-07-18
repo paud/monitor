@@ -32,11 +32,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "symbol.h"
 #include "unhook.h"
 #include "systemUtilitys.h"
+#include "SPUtilstd.h"
 
 #define IDB_ONE 3301
 #define IDB_TWO 3302
 #define IDB_THREE 3303
 
+
+char* iret(){
+}
 //char netsimulation[5] = {0};
 
 static uint32_t _parse_mode(const char *mode)
@@ -111,8 +115,9 @@ void config_read1(config_t *cfg)
     char buf[512], config_fname[MAX_PATH];
     char *cwd;
     //cwd = _getcwd(buf, 512);
-    cwd = GetExePath();
-    strcat(cwd, "\\analyst.cfg");
+    //cwd = GetExePath();
+    cwd=getlocal("analyst.cfg");
+    //strcat(cwd, "\\analyst.cfg");
     sprintf(config_fname, cwd, GetCurrentProcessId());
 
     memset(cfg, 0, sizeof(config_t));
@@ -297,8 +302,10 @@ void monitor_hook(const char *library, void *module_handle)
         }
         else
         {*/
-        while (hook(h, module_handle) == 1)
-            ;
+        //while (hook(h, module_handle) == 1){
+            *h->orig = (FARPROC) iret;
+        //}
+        //h->orig=&iret;
         //}
         /**/ hookcount++;
         char a[512] = {0};
@@ -354,6 +361,13 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
 
     return TRUE;
 }
+
+extern HRESULT WINAPI New_user32_MessageBoxW(
+    HWND hWnd,
+    LPWSTR lpNewFileName,
+    LPWSTR lpExistingFileName,
+    DWORD dwFlags
+);
 
 LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -460,10 +474,22 @@ LRESULT CALLBACK MainWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPar
             {
             }
             return d_sock;*/
+
+            New_user32_MessageBoxW(0,"fdsf","a",0);
+            return;
+            DWORD h = LoadLibrary("monitor-x64.dll");
+            if(h!=0){
+                DWORD p=GetProcAddress(h,"New_user32_MessageBoxA");
+                if(p!=0){
+                    MessageBoxA(0,"fdsf","a",0);
+                }
+                
+            }
+            return;
             char s[] = "GET1-sldkf-123ls-343434-dfjdlkfj-dflcmvn";
             char *delim = "-";
             char *p;
-            p = getUrlFromBuffer(s);
+            //p = getUrlFromBuffer(s);
             printf("%s ", p);
             p = strtok(s, delim);
             printf("%s ", p);

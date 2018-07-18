@@ -72,6 +72,7 @@ class SignatureProcessor(object):
         dereference_path = os.path.join(data_dir, 'dereference.conf')
 
         self.hooks_c = os.path.join(out_dir, 'hooks.c')
+        self.ihook_config = os.path.join(out_dir, 'config.txt')
         self.hooks_h = os.path.join(out_dir, 'hooks.h')
         self.hook_info_h = os.path.join(out_dir, 'hook-info.h')
 
@@ -498,6 +499,8 @@ class SignatureProcessor(object):
         self.dp.render('hook-header', self.hooks_h, sigs=self.sigs)
         self.dp.render('hook-source', self.hooks_c,
                        sigs=self.sigs, types=self.types, debug=debug)
+        self.dp.render('ihook-config', self.ihook_config,
+                       sigs=self.sigs, types=self.types, debug=debug)
         self.dp.render('hook-info-header', self.hook_info_h,
                        sigs=self.sigs, first_hook=len(self.base_sigs))
 
@@ -738,13 +741,16 @@ class InsnProcess(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    #parser.print_usage()
+    #exit();
+    #parser='release --apis='
     parser.add_argument('action', type=str, help='Action to perform.')
     parser.add_argument('data_directory', type=str, nargs='?', default='data/', help='Path to data directory.')
     parser.add_argument('output_directory', type=str, nargs='?', default='objects/code/', help='Output directory.')
     parser.add_argument('signatures_directory', type=str, nargs='?', default='sigs/', help='Signature directory.')
     parser.add_argument('flags_directory', type=str, nargs='?', default='flags/', help='Flags directory.')
     parser.add_argument('-a', '--apis', type=str, help='If set, only hook these functions.')
-    args = parser.parse_args()
+    args = parser.parse_args('release --apis='.split())
 
     insnfiles = []
     for filename in os.listdir("insn"):
@@ -769,7 +775,7 @@ if __name__ == '__main__':
 
     if args.action == 'release':
         fp.write()
-        dp.render(apis=apis)
+        dp.render(apis=apis) #create hooks.c
         ip.write()
     elif args.action == 'debug':
         fp.write()

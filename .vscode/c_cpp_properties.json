@@ -1,6 +1,5 @@
 {
-    "configurations": [
-        {
+    "configurations": [{
             "name": "Mac",
             "includePath": [
                 "/usr/include",
@@ -55,7 +54,8 @@
                 "${workspaceFolder}/inc",
                 "${workspaceFolder}/src/bson",
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/src/capstone/include"
+                "${workspaceFolder}/src/capstone/include",
+                "${workspaceFolder}/sputils"
             ],
             "defines": [
                 "_DEBUG",

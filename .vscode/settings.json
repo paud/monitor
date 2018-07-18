@@ -23,7 +23,10 @@
         "diffing.h": "c",
         "stdlib.h": "c",
         "utility": "c",
-        "xutility": "c"
+        "xutility": "c",
+        "monitor.h": "c",
+        "initializer_list": "c"
     },
-    "C_Cpp.dimInactiveRegions": false
+    "C_Cpp.dimInactiveRegions": false,
+    "C_Cpp.errorSquiggles": "Disabled"
 }

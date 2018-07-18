@@ -1,0 +1,4 @@
+RegQueryValueExW
+NtAllocateVirtualMemory
+ZwTerminateProcess
+memcpy

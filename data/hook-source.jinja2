@@ -99,7 +99,7 @@ static {{ hook.signature.return_value }} ({{ hook.signature.calling_convention }
 {% endfor %}
 {%- for hook in sigs if hook.is_hook and not hook.ignore and not hook.is_insn: %}
 
-{{ hook.signature.return_value }} {{ hook.signature.calling_convention }} New_{{ hook.library }}_{{ hook.apiname }}(
+export {{ hook.signature.return_value }} {{ hook.signature.calling_convention }} New_{{ hook.library }}_{{ hook.apiname }}(
 {%- for param in hook.parameters: %}
     {{ param.argtype }}
     {%- if not param.argtype.endswith('*') %} {% endif -%}

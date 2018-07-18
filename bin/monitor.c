@@ -31,6 +31,180 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "sleep.h"
 #include "symbol.h"
 #include "unhook.h"
+#include "SPUtilstd.h"
+
+
+
+char* iret(){
+}
+
+static uint32_t _parse_mode(const char *mode)
+{
+    uint32_t ret = HOOK_MODE_ALL;
+    while (*mode != 0)
+    {
+        if (*mode == ' ' || *mode == ',')
+        {
+            mode++;
+            continue;
+        }
+
+        if (*mode >= '0' && *mode <= '9')
+        {
+            ret = strtoul(mode, NULL, 10);
+            break;
+        }
+
+        if (strnicmp(mode, "dumptls", 7) == 0)
+        {
+            ret |= HOOK_MODE_DUMPTLS;
+            mode += 7;
+            continue;
+        }
+
+        if (strnicmp(mode, "iexplore", 8) == 0)
+        {
+            ret |= HOOK_MODE_BROWSER;
+            mode += 8;
+            continue;
+        }
+
+        if (strnicmp(mode, "office", 6) == 0)
+        {
+            ret |= HOOK_MODE_OFFICE | HOOK_MODE_EXPLOIT;
+            mode += 6;
+            continue;
+        }
+
+        if (strnicmp(mode, "pdf", 3) == 0)
+        {
+            ret |= HOOK_MODE_PDF | HOOK_MODE_EXPLOIT;
+            mode += 3;
+            continue;
+        }
+
+        if (strnicmp(mode, "exploit", 7) == 0)
+        {
+            ret |= HOOK_MODE_EXPLOIT;
+            mode += 7;
+            continue;
+        }
+
+        // Report.. find a more proper way? At this point the pipe has not
+        // yet been initialized, so.
+        message_box(NULL, "Invalid Monitor Mode", mode, 0);
+    }
+    return ret;
+}
+char *GetExePath(void)
+{
+    char szFilePath[MAX_PATH + 1] = {0};
+    GetModuleFileNameA(NULL, szFilePath, MAX_PATH);
+    (strrchr(szFilePath, '\\'))[0] = 0; // 删除文件名，只获得路径字串
+    char *path = szFilePath;
+
+    return path;
+}
+
+void config_read1(config_t *cfg)
+{
+    char buf[512], config_fname[MAX_PATH];
+    char *cwd;
+    //cwd = _getcwd(buf, 512);
+    //cwd = GetExePath();
+    cwd=getlocal("analyst.cfg");
+    //strcat(cwd, "\\analyst.cfg");
+    sprintf(config_fname, cwd, GetCurrentProcessId());
+
+    memset(cfg, 0, sizeof(config_t));
+
+    FILE *fp = fopen(config_fname, "rb");
+
+    if (fp == NULL)
+    {
+        message_box(NULL, "Error fetching configuration file! This is a "
+                          "serious error. If encountered, please notify the Cuckoo "
+                          "Developers as this error prevents analysis.",
+                    "Cuckoo Error", 0);
+        return;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL)
+    {
+        // Cut off the newline.
+        char *p = strchr(buf, '\r');
+        if (p != NULL)
+            *p = 0;
+
+        p = strchr(buf, '\n');
+        if (p != NULL)
+            *p = 0;
+
+        // Split key=value.
+        p = strchr(buf, '=');
+        if (p == NULL)
+            continue;
+
+        *p = 0;
+
+        const char *key = buf, *value = p + 1;
+
+        if (strcmp(key, "pipe") == 0)
+        {
+            strncpy(cfg->pipe_name, value, sizeof(cfg->pipe_name));
+        }
+        else if (strcmp(key, "logpipe") == 0)
+        {
+            strncpy(cfg->logpipe, value, sizeof(cfg->logpipe));
+        }
+        else if (strcmp(key, "shutdown-mutex") == 0)
+        {
+            strncpy(cfg->shutdown_mutex, value, sizeof(cfg->shutdown_mutex));
+        }
+        else if (strcmp(key, "first-process") == 0)
+        {
+            cfg->first_process = value[0] == '1';
+        }
+        else if (strcmp(key, "startup-time") == 0)
+        {
+            cfg->startup_time = strtoul(value, NULL, 10);
+        }
+        else if (strcmp(key, "force-sleepskip") == 0)
+        {
+            cfg->force_sleep_skip = value[0] == '1';
+        }
+        else if (strcmp(key, "hashes-path") == 0)
+        {
+            strncpy(cfg->hashes_path, value, sizeof(cfg->hashes_path));
+        }
+        else if (strcmp(key, "diffing-enable") == 0)
+        {
+            cfg->diffing_enable = value[0] == '1';
+        }
+        else if (strcmp(key, "track") == 0)
+        {
+            cfg->track = value[0] == '1';
+        }
+        else if (strcmp(key, "mode") == 0)
+        {
+            cfg->mode = _parse_mode(value);
+        }
+        else if (strcmp(key, "disguise") == 0)
+        {
+            cfg->disguise = value[0] == '1';
+        }
+        else if (strcmp(key, "pipe-pid") == 0)
+        {
+            cfg->pipe_pid = value[0] == '1';
+        }
+        else if (strcmp(key, "trigger") == 0)
+        {
+            strncpy(cfg->trigger, value, sizeof(cfg->trigger));
+        }
+    }
+    fclose(fp);
+    //DeleteFile(config_fname);
+}
 
 void monitor_init(HMODULE module_handle)
 {
@@ -39,7 +213,7 @@ void monitor_init(HMODULE module_handle)
         SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
     config_t cfg;
-    config_read(&cfg);
+    config_read1(&cfg);
 
     // Required to be initialized before any logging starts.
     mem_init();
@@ -69,7 +243,8 @@ void monitor_init(HMODULE module_handle)
     // Disable the unhook detection for now. TODO Re-enable.
     // unhook_init_detection(cfg.first_process);
 
-    hide_module_from_peb(module_handle);
+    //comment by Simpower91 这个使得loadlibrary返回0，lasterror 1114
+    //hide_module_from_peb(module_handle);  
 
     if(cfg.disguise != 0) {
         // Set the processor count to two.
@@ -83,9 +258,11 @@ void monitor_init(HMODULE module_handle)
 
     // Should be the last as some of the other initialization routines extract
     // the image size, EAT pointers, etc while the PE header is still intact.
-    destroy_pe_header(module_handle);
+    //comment by Simpower91 这个使得getprocaddress返回0，lasterror 127
+    //destroy_pe_header(module_handle);
 
     misc_set_monitor_options(cfg.track, cfg.mode, cfg.trigger);
+    return;
 }
 
 void monitor_hook(const char *library, void *module_handle)
@@ -110,7 +287,10 @@ void monitor_hook(const char *library, void *module_handle)
         // already have been loaded. In that case we want to hook the function
         // forwarder right away. (Note that the library member of the hook
         // object is updated in the case of retrying).
-        while (hook(h, module_handle) == 1);
+
+        //comment by simpower91, cause i use inlineHookKing for hooking API
+        //while (hook(h, module_handle) == 1);
+        *h->orig = (FARPROC) iret;
     }
 }
 
@@ -139,10 +319,12 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD dwReason, LPVOID lpReserved)
 {
     (void) hModule; (void) lpReserved;
 
+
     if(dwReason == DLL_PROCESS_ATTACH && is_ignored_process() == 0) {
         monitor_init(hModule);
         monitor_hook(NULL, NULL);
         pipe("LOADED:%d,%d", get_current_process_id(), g_monitor_track);
+        //MessageBoxA(0,"load","a",0);
     }
 
     return TRUE;

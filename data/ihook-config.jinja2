@@ -1,0 +1,4 @@
+[monitor-x64.dll]{{'\r'}}
+{%- for hook in sigs if hook.is_hook and not hook.ignore and not hook.is_insn: %}
+{{ hook.apiname }}=&nofunc,New_{{ hook.library }}_{{ hook.apiname }}{{'\r'}}{% endfor %}
+
