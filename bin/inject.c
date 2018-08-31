@@ -37,6 +37,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_PATH_W 0x7fff
 #define NOINLINE __attribute__((noinline))
 
+#define PATH_KERNEL_DRIVER "\\\\.\\zer0m0n"
+
+#define IOCTL_PROC_MALWARE  0x222000
+#define IOCTL_PROC_TO_HIDE  0x222004
+#define IOCTL_CUCKOO_PATH   0x222008
+
 typedef struct _dump_t {
     uint64_t addr;
     uint32_t size;
@@ -469,14 +475,15 @@ int dump(uint32_t pid, const wchar_t *filepath,
 
     process_handle = open_process(pid);
 
-    uint8_t *ptr = si.lpMinimumApplicationAddress;
+    uint8_t *ptr = si.lpMinimumApplicationAddress; //系统可访问的最小地址
 
-    while (ptr < (uint8_t *) si.lpMaximumApplicationAddress) {
-        if(VirtualQueryEx(process_handle, ptr, &mbi, sizeof(mbi)) == FALSE) {
+    while (ptr < (uint8_t *) si.lpMaximumApplicationAddress) { //系统可访问的最大地址 
+        if(VirtualQueryEx(process_handle, ptr, &mbi, sizeof(mbi)) == FALSE) { //本功能将指定进程所分配的所有内存页导出。
             ptr += 0x1000;
             continue;
         }
 
+        //未分配                            //guard page不允许访问
         if((mbi.State & MEM_COMMIT) == 0 || (mbi.Protect & PAGE_GUARD) != 0 ||
                 (mbi.Type & (MEM_IMAGE | MEM_MAPPED | MEM_PRIVATE)) == 0) {
             ptr += mbi.RegionSize;
@@ -517,36 +524,6 @@ int main()
 {
     LPWSTR *argv; int argc;
 
-    //PStringList sl=TStringList_Create();
-    //sl->loadFromFile((pointer)sl,"abcd.txt");
-    char* path="f:/abc.txt";
-    char* mode="rt+";
-    /*
-    r：只读方式打开，文件必须存在
-    r+：可读写，必须存在
-    rb+：打开二进制文件，可以读写
-    rt+:打开文本文件，可读写
-    w:只写，文件存在则文件长度清0，文件不存在则建立该文件
-    w+:可读写，文件存在则文件长度清0，文件不存在则建立该文件
-    a:附加方式打开只写，不存在建立该文件，存在写入的数据加到文件尾，EOF符保留
-    a+：附加方式打开可读写，不存在建立该文件，存在写入的数据加到文件尾，EOF符不保留
-    wb：打开二进制文件，只写
-    wb+:打开或建立二进制文件，可读写
-    wt+:打开或建立文本文件，可读写
-    at+:打开文本文件，可读写，写的数据加在文本末尾
-    ab+:打开二进制文件，可读写，写的数据加在文件末尾
-    */
-
-    FILE *fp;  
-    fp=fopen(path, "at+"); 
-    if( fp == NULL)
-    {
-        fprintf(stderr , "fopen() failed . errno = %d\n",errno);
-        exit(1);
-    
-    }
-    fwrite("123\r\n",1,5,fp);
-
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if(argv == NULL) {
         error("Error parsing commandline options!\n");
@@ -563,9 +540,11 @@ int main()
 
             "  --free                 Do not inject our monitor\n"
             "  --dll <dll>            DLL to inject\n"
+            "  --cuckoo_path <path>   Path to cuckoo directory\n"
             "  --app <app>            Path to application to start\n"
             "  --args <args>          Command-line arguments\n"
             "                         Excluding the application path!\n"
+            "  --kernel_analysis      Performs analysis in kernel with zer0m0n\n"
             "  --curdir <dirpath>     Current working directory\n"
             "  --maximize             Maximize the newly created GUI\n"
             "  --pid <pid>            Process identifier to inject\n"
@@ -593,12 +572,18 @@ int main()
 
     const wchar_t *dll_path = NULL, *app_path = NULL, *arguments = L"";
     const wchar_t *config_file = NULL, *from_process = NULL, *dbg_path = NULL;
-    const wchar_t *curdir = NULL, *process_name = NULL, *dump_path = NULL;
+    const wchar_t *curdir = NULL, *process_name = NULL, *dump_path = NULL,*cuckoo_path = NULL;
     uint32_t pid = 0, tid = 0, from = 0, inj_mode = INJECT_NONE, partial = 0;
     uint32_t show_window = SW_SHOWNORMAL, only_start = 0, resume_thread_ = 0;
     uintptr_t dump_addr = 0, dump_length = 0;
     //modified by simpower91  do not delete temp config file when copy it to c:\cuckoo_xxx.ini
     BOOL cfgcp=FALSE;
+    //for ring0
+    char* s_pid = NULL;
+    char *processes_to_hide = NULL;
+    uint32_t dwBytesReturned = 0;
+    boolean kernel_analysis = FALSE;
+    HANDLE hDevice = INVALID_HANDLE_VALUE;
 
     for (int idx = 1; idx < argc; idx++) {
         fwrite(argv[idx],1,26,fp);
@@ -616,6 +601,17 @@ int main()
 
         if(wcscmp(argv[idx], L"--free") == 0) {
             inj_mode = INJECT_FREE;
+            continue;
+        }
+
+        if(wcscmp(argv[idx], L"--kernel_analysis") == 0) {
+            inj_mode = INJECT_FREE;
+            kernel_analysis = TRUE;
+            continue;
+        }
+
+        if(wcscmp(argv[idx], L"--cuckoo_path") == 0) {
+            cuckoo_path = argv[++idx];
             continue;
         }
 
@@ -878,6 +874,39 @@ int main()
             NULL, NULL, SW_SHOWNORMAL);
 
         Sleep(5000);
+    }
+
+    if(kernel_analysis)
+    {
+        Sleep(5000);   
+        // get handle to device driver and send IOCTLs   
+        hDevice = CreateFile(PATH_KERNEL_DRIVER, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if(hDevice != INVALID_HANDLE_VALUE)
+        {
+
+            // send processes pid to hide
+            processes_to_hide = malloc(MAX_PATH);
+            sprintf(processes_to_hide, "%d,%d,%d", GetCurrentProcessId(), pid_from_process_name(L"VBoxService.exe"), pid_from_process_name(L"VBoxTray.exe"));
+            if(DeviceIoControl(hDevice, IOCTL_PROC_TO_HIDE, processes_to_hide, strlen(processes_to_hide), NULL, 0, &dwBytesReturned, NULL))
+                fprintf(stderr, "[+] processes to hide [%s] sent to zer0m0n\n", processes_to_hide);
+            free(processes_to_hide);
+
+            // send malware's pid
+            s_pid = malloc(MAX_PATH);
+            sprintf(s_pid, "%d", pid);
+            if(DeviceIoControl(hDevice, IOCTL_PROC_MALWARE, s_pid, strlen(s_pid), NULL, 0, &dwBytesReturned, NULL))
+                fprintf(stderr, "[+] malware pid : %s sent to zer0m0n\n", pid);
+            free(s_pid);
+        
+
+            fprintf(stderr, "[+] cuckoo path : %ls\n", cuckoo_path);
+            // send current directory
+            if(DeviceIoControl(hDevice, IOCTL_CUCKOO_PATH, cuckoo_path, 200, NULL, 0, &dwBytesReturned, NULL))
+                fprintf(stderr, "[+] cuckoo path %ws sent to zer0m0n\n", cuckoo_path);
+        }
+        else
+            fprintf(stderr, "[-] failed to access kernel driver\n");
+        CloseHandle(hDevice);
     }
 
     if((app_path != NULL || resume_thread_ != 0) && tid != 0) {
