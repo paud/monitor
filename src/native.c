@@ -243,7 +243,9 @@ int native_init()
             continue;
         }
 
-        _native_copy_function(*g_pointers[idx], fp);
+        //simpower91 modified
+        //_native_copy_function(*g_pointers[idx], fp);
+        *g_pointers[idx]=fp;
     }
 
     *(uint8_t **) &pGetTickCount = memory;

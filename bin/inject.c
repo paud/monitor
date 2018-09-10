@@ -536,7 +536,7 @@ int main()
             "  --crt                  CreateRemoteThread injection\n"
             "  --apc                  QueueUserAPC injection\n"
             //modified by simpower91
-            "  --cfgcp                Do not delete the temp config file"
+            "  --cfgcp                Do not delete the temp config file\n"
 
             "  --free                 Do not inject our monitor\n"
             "  --dll <dll>            DLL to inject\n"
@@ -586,8 +586,6 @@ int main()
     HANDLE hDevice = INVALID_HANDLE_VALUE;
 
     for (int idx = 1; idx < argc; idx++) {
-        fwrite(argv[idx],1,26,fp);
-        fwrite("\r\n",1,2,fp);
 
         if(wcscmp(argv[idx], L"--crt") == 0) {
             inj_mode = INJECT_CRT;
@@ -638,8 +636,6 @@ int main()
 
         if(wcscmp(argv[idx], L"--curdir") == 0) {
             curdir = argv[++idx];
-            fwrite(argv[idx],1,26,fp);
-            fwrite("\r\n",1,2,fp);
             continue;
         }
 
@@ -712,7 +708,6 @@ int main()
         error("[-] Found unsupported argument: %S\n", argv[idx]);
         return 1;
     }
-    fwrite("argAfter:\r\n",1,11,fp);
 
     // Dump memory of a process.
     if(dump_path != NULL && pid != 0) {
@@ -916,6 +911,5 @@ int main()
     // Report the process and thread identifiers.
     printf("%d %d", pid, tid);
 
-    fclose(fp);
     return 0;
 }
