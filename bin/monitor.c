@@ -214,7 +214,8 @@ void monitor_init(HMODULE module_handle)
 
     config_t cfg;
     //沙箱版的改为 config_read(&cfg);安天剑为config_read1(&cfg);
-    config_read1(&cfg);
+    //config_read1(&cfg);
+    config_read(&cfg);
 
     // Required to be initialized before any logging starts.
     mem_init();
