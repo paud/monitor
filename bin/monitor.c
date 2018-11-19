@@ -57,7 +57,7 @@ static uint32_t _parse_mode(const char *mode)
 
         if (strnicmp(mode, "dumptls", 7) == 0)
         {
-            ret |= HOOK_MODE_DUMPTLS;
+            ret |= 0; //HOOK_MODE_DUMPTLS; //modified by simpower91 这里没一点鸟用，反而造成程序崩溃
             mode += 7;
             continue;
         }
