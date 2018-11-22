@@ -12,11 +12,11 @@ RegOpenKeyExA
 
 Parameters::
 
-    ** HKEY hKey base_handle
-    ** LPCTSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPCTSTR lpSubKey SubKey
     ** DWORD ulOptions options
-    ** REGSAM samDesired access
-    ** PHKEY phkResult key_handle
+    ** REGSAM samDesired samDesired
+    ** PHKEY phkResult hkResult
 
 Pre::
 
@@ -27,7 +27,7 @@ Interesting::
 
     u regkey
     i options
-    i access
+    i samDesired
 
 Logging::
 
@@ -43,11 +43,11 @@ RegOpenKeyExW
 
 Parameters::
 
-    ** HKEY hKey base_handle
-    ** LPWSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPWSTR lpSubKey SubKey
     ** DWORD ulOptions options
-    ** REGSAM samDesired access
-    ** PHKEY phkResult key_handle
+    ** REGSAM samDesired samDesired
+    ** PHKEY phkResult hkResult
 
 Pre::
 
@@ -58,7 +58,7 @@ Interesting::
 
     u regkey
     i options
-    i access
+    i samDesired
 
 Logging::
 
@@ -74,15 +74,15 @@ RegCreateKeyExA
 
 Parameters::
 
-    ** HKEY hKey base_handle
-    ** LPCTSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPCTSTR lpSubKey SubKey
     *  DWORD Reserved
-    ** LPTSTR lpClass class
+    ** LPTSTR lpClass Class
     ** DWORD dwOptions options
-    ** REGSAM samDesired access
+    ** REGSAM samDesired samDesired
     *  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-    ** PHKEY phkResult key_handle
-    ** LPDWORD lpdwDisposition disposition
+    ** PHKEY phkResult hkResult
+    ** LPDWORD lpdwDisposition dwDisposition
 
 Pre::
 
@@ -92,10 +92,10 @@ Pre::
 Interesting::
 
     u regkey
-    s class
+    s Class
     i options
-    i access
-    I disposition
+    i samDesired
+    I dwDisposition
 
 Logging::
 
@@ -111,15 +111,15 @@ RegCreateKeyExW
 
 Parameters::
 
-    ** HKEY hKey base_handle
-    ** LPWSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPWSTR lpSubKey SubKey
     *  DWORD Reserved
-    ** LPWSTR lpClass class
+    ** LPWSTR lpClass Class
     ** DWORD dwOptions options
-    ** REGSAM samDesired access
+    ** REGSAM samDesired samDesired
     *  LPSECURITY_ATTRIBUTES lpSecurityAttributes
-    ** PHKEY phkResult key_handle
-    ** LPDWORD lpdwDisposition disposition
+    ** PHKEY phkResult hkResult
+    ** LPDWORD lpdwDisposition dwDisposition
 
 Pre::
 
@@ -129,10 +129,10 @@ Pre::
 Interesting::
 
     u regkey
-    u class
+    u Class
     i options
-    i access
-    I disposition
+    i samDesired
+    I dwDisposition
 
 Logging::
 
@@ -148,8 +148,8 @@ RegDeleteKeyA
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPCTSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPCTSTR lpSubKey SubKey
 
 Pre::
 
@@ -174,8 +174,8 @@ RegDeleteKeyW
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPWSTR lpSubKey regkey_r
+    ** HKEY hKey hKey
+    ** LPWSTR lpSubKey SubKey
 
 Pre::
 
@@ -229,14 +229,14 @@ RegEnumKeyExA
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** DWORD dwIndex index
-    ** LPTSTR lpName key_name
-    *  LPDWORD lpcName
+    ** HKEY hKey hKey
+    ** DWORD dwIndex dwIndex
+    ** LPTSTR lpName Name
+    ** LPDWORD lpcName cName
     *  LPDWORD lpReserved
-    ** LPTSTR lpClass class
-    *  LPDWORD lpcClass
-    *  PFILETIME lpftLastWriteTime
+    ** LPTSTR lpClass Class
+    ** LPDWORD lpcClass cClass
+    *  PFILETIME lpftLastWriteTime LastWriteTime
 
 Pre::
 
@@ -246,7 +246,7 @@ Pre::
 Interesting::
 
     u regkey
-    i index
+    i dwIndex
 
 Logging::
 
@@ -262,14 +262,14 @@ RegEnumKeyExW
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** DWORD dwIndex index
-    ** LPWSTR lpName key_name
-    *  LPDWORD lpcName
+    ** HKEY hKey hKey
+    ** DWORD dwIndex dwIndex
+    ** LPWSTR lpName Name
+    ** LPDWORD lpcName cName
     *  LPDWORD lpReserved
-    ** LPWSTR lpClass class
-    *  LPDWORD lpcClass
-    *  PFILETIME lpftLastWriteTime
+    ** LPWSTR lpClass Class
+    ** LPDWORD lpcClass cClass
+    *  PFILETIME lpftLastWriteTime LastWriteTime
 
 Pre::
 
@@ -279,7 +279,7 @@ Pre::
 Interesting::
 
     u regkey
-    i index
+    i dwIndex
 
 Logging::
 
@@ -295,18 +295,18 @@ RegEnumValueA
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** DWORD dwIndex index
-    ** LPTSTR lpValueName regkey_r
-    *  LPDWORD lpcchValueName
-    *  LPDWORD lpReserved
-    ** LPDWORD lpType reg_type
+    ** HKEY hKey hKey
+    ** DWORD dwIndex dwIndex
+    ** LPTSTR lpValueName ValueName
+    ** LPDWORD lpcValueName cValueName
+    *  LPDWORD lpReserved 
+    ** LPDWORD lpType dwType
     *  LPBYTE lpData
-    *  LPDWORD lpcbData
+    ** LPDWORD lpcbData cbData
 
 Flags::
 
-    reg_type
+    dwType
 
 Ensure::
 
@@ -323,10 +323,10 @@ Pre::
 Logging::
 
     u regkey regkey
-    r value lpType, lpcbData, lpData
+    r Data lpType, lpcbData, lpData
 
 Post::
-
+    
     free_unicode_buffer(regkey);
 
 
@@ -335,18 +335,18 @@ RegEnumValueW
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** DWORD dwIndex index
-    ** LPWSTR lpValueName regkey_r
-    *  LPDWORD lpcchValueName
+    ** HKEY hKey hKey
+    ** DWORD dwIndex dwIndex
+    ** LPWSTR lpValueName ValueName
+    ** LPDWORD lpcValueName cValueName
     *  LPDWORD lpReserved
-    ** LPDWORD lpType reg_type
+    ** LPDWORD lpType dwType
     *  LPBYTE lpData
-    *  LPDWORD lpcbData
+    ** LPDWORD lpcbData cbData
 
 Flags::
 
-    reg_type
+    dwType
 
 Ensure::
 
@@ -363,7 +363,7 @@ Pre::
 Logging::
 
     u regkey regkey
-    R value lpType, lpcbData, lpData
+    R Data lpType, lpcbData, lpData
 
 Post::
 
@@ -375,16 +375,16 @@ RegSetValueExA
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPCTSTR lpValueName regkey_r
+    ** HKEY hKey hKey
+    ** LPCTSTR lpValueName ValueName
     *  DWORD Reserved
-    ** DWORD dwType reg_type
+    ** DWORD dwType dwType
     *  const BYTE *lpData
-    *  DWORD cbData
+    ** DWORD cbData cbDate
 
 Flags::
 
-    reg_type
+    dwType
 
 Pre::
 
@@ -394,13 +394,13 @@ Pre::
 Interesting::
 
     u regkey
-    i reg_type
+    i dwType
     b cbData, lpData
 
 Logging::
 
     u regkey regkey
-    r value &dwType, &cbData, lpData
+    r Data &dwType, &cbData, lpData
 
 Post::
 
@@ -412,16 +412,16 @@ RegSetValueExW
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPWSTR lpValueName regkey_r
+    ** HKEY hKey hKey
+    ** LPWSTR lpValueName ValueName
     *  DWORD Reserved
-    ** DWORD dwType reg_type
+    ** DWORD dwType dwType
     *  const BYTE *lpData
-    *  DWORD cbData
+    ** DWORD cbData cbData
 
 Flags::
 
-    reg_type
+    dwType
 
 Pre::
 
@@ -431,13 +431,13 @@ Pre::
 Interesting::
 
     u regkey
-    i reg_type
+    i dwType
     b cbData, lpData
 
 Logging::
 
     u regkey regkey
-    R value &dwType, &cbData, lpData
+    R Data &dwType, &cbData, lpData
 
 Post::
 
@@ -449,16 +449,16 @@ RegQueryValueExA
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPCTSTR lpValueName regkey_r
+    ** HKEY hKey hKey
+    ** LPCTSTR lpValueName ValueName
     *  LPDWORD lpReserved
-    ** LPDWORD lpType reg_type
+    ** LPDWORD lpType dwType
     *  LPBYTE lpData
-    *  LPDWORD lpcbData
+    ** LPDWORD lpcbData cbData
 
 Flags::
 
-    reg_type
+    dwType
 
 Ensure::
 
@@ -479,28 +479,28 @@ Interesting::
 Logging::
 
     u regkey regkey
-    r value lpType, lpcbData, lpData
+    r Data lpType, lpcbData, lpData
 
 Post::
 
     free_unicode_buffer(regkey);
 
 
-RegQueryValueExW
+__RegQueryValueExW
 ================
 
 Parameters::
 
-    ** HKEY hKey key_handle
-    ** LPWSTR lpValueName regkey_r
+    ** HKEY hKey hKey
+    ** LPWSTR lpValueName ValueName
     *  LPDWORD lpReserved
-    ** LPDWORD lpType reg_type
+    ** LPDWORD lpType dwType
     *  LPBYTE lpData
-    *  LPDWORD lpcbData
+    ** LPDWORD lpcbData cbData
 
 Flags::
 
-    reg_type
+    dwType
 
 Ensure::
 
@@ -521,7 +521,7 @@ Interesting::
 Logging::
 
     u regkey regkey
-    R value lpType, lpcbData, lpData
+    R Data lpType, lpcbData, lpData
 
 Post::
 
