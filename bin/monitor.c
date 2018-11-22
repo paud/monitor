@@ -279,10 +279,11 @@ void monitor_hook(const char *library, void *module_handle)
 
         // We only hook this function if the monitor mode is "hook everything"
         // or if the monitor mode matches the mode of this hook.
-        if(g_monitor_mode != HOOK_MODE_ALL &&
+        //comment by simpower91, cause i use inlineHookKing for hooking All APIs
+        /*if(g_monitor_mode != HOOK_MODE_ALL &&
                 (g_monitor_mode & h->mode) == 0) {
             continue;
-        }
+        }*/
 
         // Return value 1 indicates to retry the hook. This is important for
         // delay-loaded function forwarders as the delay-loaded DLL may

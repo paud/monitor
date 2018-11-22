@@ -1,6 +1,7 @@
 .SUFFIXES:.c .o .h
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
-	-I ../inc/ -I ../objects/code/ -I ../src/bson/ -I ../src/sha1/ -I ../src/capstone/include/ #-mwindows
+	-I ../inc/ -I ../objects/code/ -I ../src/bson/ -I ../src/sha1/  \
+	-I ../src/capstone/include/ -I ../sputils/ #-mwindows
 LDFLAGS = -lshlwapi -lwsock32 -lgdi32 -lws2_32 -fexec-charset=gbk
 
 CC=i686-w64-mingw32-gcc -m32
@@ -19,6 +20,10 @@ HEADER = $(wildcard ../inc/*.h)
 BSON = $(wildcard ../src/bson/*.c)
 BSONOBJ86 = $(BSON:%.c=%.o)
 
+SPUTIL = $(wildcard ../sputils/*.c)
+SPUTILOBJ86 = $(SPUTIL:%.c=%.o)
+SPHEADER = $(wildcard ../sputils/*.h)
+
 SHA1 = ../src/sha1/sha1.c
 SHA1OBJ86 = ../objects/x86/src/sha1/sha1.o
 
@@ -32,7 +37,7 @@ all: $(BINARIES)
 $(INSNSSRC) $(FLAGSRC): $(HOOKSRC)
 
 testmonitor: testmonitor.o $(SRCOBJ86) $(HOOKOBJ86) $(FLAGOBJ86) \
-		$(INSNSOBJ86) $(BSONOBJ86) $(LIBCAPSTONE86) $(SHA1OBJ86)
+		$(INSNSOBJ86) $(BSONOBJ86) $(SPUTILOBJ86) $(LIBCAPSTONE86) $(SHA1OBJ86)
 	$(CC) -g -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 %.o: %.c

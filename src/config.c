@@ -39,7 +39,7 @@ static uint32_t _parse_mode(const char *mode)
         }
 
         if(strnicmp(mode, "dumptls", 7) == 0) {
-            ret |= 0; //HOOK_MODE_DUMPTLS; //modified by simpower91 这里没一点鸟用，反而造成程序崩溃
+            ret |= HOOK_MODE_DUMPTLS; //0; //modified by simpower91， monitor_hook里用到，而dumptls的只有ncrypt.dll中的RPF和Ssl3GenerateKeyMaterial两个函数，有时反而造成程序崩溃
             mode += 7;
             continue;
         }
