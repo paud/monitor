@@ -65,6 +65,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 {% macro call_old(hook, replace_args=True, lasterr=True) -%}
     set_last_error(&lasterror);
+    DWORD ret=0;/*
     {%- if hook.signature.return_value != 'void' %}
     {{ hook.signature.return_value }} ret = Old_{{ hook.library }}_{{ hook.apiname }}(
     {%- else %}
@@ -78,7 +79,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         {%- endif %}
         {%- if not loop.last %},{% endif -%}
     {%- endfor %}
-    );
+    );*/
     {%- if lasterr %}
     get_last_error(&lasterror);
     {%- endif %}

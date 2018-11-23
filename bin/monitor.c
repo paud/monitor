@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 
-char* iret(){
+char* iret(){ //这个代替stub直接返回原地址，实际上这个不够，因为stdcall是不会平衡堆栈的，所以要在.jinjia2文件中把old call去掉
 }
 
 static uint32_t _parse_mode(const char *mode)
@@ -213,7 +213,7 @@ void monitor_init(HMODULE module_handle)
         SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
     config_t cfg;
-    //沙箱版的改为 config_read(&cfg);安天剑为config_read1(&cfg);
+    //沙箱版的改为 config_read(&cfg);固定cfg位置到当前目录调试用为config_read1(&cfg);
     //config_read1(&cfg);
     config_read(&cfg);
 
