@@ -137,11 +137,11 @@ Signature::
 
 Parameters::
 
-    *  LPWSTR lpExistingFileName
-    *  LPWSTR lpNewFileName
+    ** LPWSTR lpExistingFileName ExistingFileName
+    ** LPWSTR lpNewFileName NewFileName
     *  LPPROGRESS_ROUTINE lpProgressRoutine
     *  LPVOID lpData
-    ** DWORD dwFlags flags
+    ** DWORD dwFlags dwFlags
 
 Pre::
 
@@ -235,7 +235,7 @@ Pre::
 Logging::
 
     u filepath filepath
-    u filepath_r lpFileName
+    u FileName lpFileName
 
 Post::
 
@@ -270,13 +270,14 @@ Interesting::
 
 Logging::
 
-    u oldfilepath oldfilepath
+    u ExistingFileName oldfilepath
     s oldfilepath_r lpExistingFileName
-    u newfilepath newfilepath
+    u NewFileName newfilepath
     s newfilepath_r lpNewFileName
 
 Post::
 
+    pipe("FILE_NEW:%Z", newfilepath);
     free_unicode_buffer(oldfilepath);
     free_unicode_buffer(newfilepath);
 
@@ -309,13 +310,14 @@ Interesting::
 
 Logging::
 
-    u oldfilepath oldfilepath
+    u ExistingFileName oldfilepath
     u oldfilepath_r lpExistingFileName
-    u newfilepath newfilepath
+    u NewFileName newfilepath
     u newfilepath_r lpNewFileName
 
 Post::
 
+    pipe("FILE_NEW:%Z", newfilepath);
     free_unicode_buffer(oldfilepath);
     free_unicode_buffer(newfilepath);
 
@@ -333,8 +335,8 @@ Parameters::
     *  LPWSTR lpNewFileName
     *  LPPROGRESS_ROUTINE lpProgressRoutine
     *  LPVOID lpData
-    *  LPBOOL pbCancel
-    ** DWORD dwCopyFlags flags
+    *  LPBOOL pbCancel 
+    ** DWORD dwCopyFlags dwCopyFlags
 
 Pre::
 
@@ -351,13 +353,14 @@ Interesting::
 
 Logging::
 
-    u oldfilepath oldfilepath
+    u ExistingFileName oldfilepath
     u oldfilepath_r lpExistingFileName
-    u newfilepath newfilepath
+    u NewFileName newfilepath
     u newfilepath_r lpNewFileName
 
 Post::
 
+    pipe("FILE_NEW:%Z", newfilepath);
     free_unicode_buffer(oldfilepath);
     free_unicode_buffer(newfilepath);
 
@@ -386,10 +389,11 @@ Interesting::
 Logging::
 
     u filepath filepath
-    u filepath_r lpFileName
+    u FileName lpFileName
 
 Post::
 
+    pipe("FILE_NEW:%Z", filepath);
     free_unicode_buffer(filepath);
 
 
@@ -480,10 +484,10 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hFile file_handle
-    *  LONG lDistanceToMove
-    *  PLONG lpDistanceToMoveHigh
-    ** DWORD dwMoveMethod move_method
+    ** HANDLE hFile hFile
+    ** LONG lDistanceToMove lDistanceToMove
+    *  PLONG lpDistanceToMoveHigh 
+    ** DWORD dwMoveMethod dwMoveMethod
 
 Pre::
 
@@ -506,10 +510,10 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hFile file_handle
+    ** HANDLE hFile hFile
     *  LARGE_INTEGER liDistanceToMove
     ** PLARGE_INTEGER lpNewFilePointer offset
-    ** DWORD dwMoveMethod move_method
+    ** DWORD dwMoveMethod dwMoveMethod
 
 
 SetFileInformationByHandle
@@ -537,18 +541,18 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hDevice device_handle
-    ** DWORD dwIoControlCode control_code
+    ** HANDLE hDevice hDevice
+    ** DWORD dwIoControlCode dwIoControlCode
     *  LPVOID lpInBuffer
-    *  DWORD nInBufferSize
-    *  LPVOID lpOutBuffer
-    *  DWORD nOutBufferSize
-    *  LPDWORD lpBytesReturned
+    ** DWORD nInBufferSize InBufferSize
+    *  LPVOID lpOutBuffer 
+    ** DWORD nOutBufferSize OutBufferSize
+    ** LPDWORD lpBytesReturned BytesReturned
     *  LPOVERLAPPED lpOverlapped
 
 Flags::
 
-    control_code
+    dwIoControlCode
 
 Ensure::
 
@@ -556,15 +560,15 @@ Ensure::
 
 Interesting::
 
-    h device_handle
+    h hDevice
 
 Prelog::
 
-    b input_buffer nInBufferSize, lpInBuffer
+    b InBuffer nInBufferSize, lpInBuffer
 
 Logging::
 
-    b output_buffer (uintptr_t) copy_uint32(lpBytesReturned), lpOutBuffer
+    b OutBuffer (uintptr_t) copy_uint32(lpBytesReturned), lpOutBuffer
 
 
 GetSystemDirectoryA
@@ -577,8 +581,8 @@ Signature::
 
 Parameters::
 
-    *  LPTSTR lpBuffer
-    *  UINT uSize
+    ** LPTSTR lpBuffer Buffer
+    ** UINT uSize uSize
 
 Logging::
 
@@ -595,8 +599,8 @@ Signature::
 
 Parameters::
 
-    *  LPWSTR lpBuffer
-    *  UINT uSize
+    ** LPWSTR lpBuffer Buffer
+    ** UINT uSize uSize
 
 Logging::
 
@@ -667,11 +671,11 @@ Signature::
 Parameters::
 
     *  LPCWSTR lpFileName
-    ** DWORD dwFileAttributes file_attributes
+    ** DWORD dwFileAttributes dwFileAttributes
 
 Flags::
 
-    file_attributes
+    dwFileAttributes
 
 Pre::
 
@@ -681,7 +685,7 @@ Pre::
 Logging::
 
     u filepath filepath
-    u filepath_r lpFileName
+    u FileName lpFileName
 
 Post::
 
@@ -765,9 +769,9 @@ Signature::
 
 Parameters::
 
-    ** LPCWSTR lpszVolumeMountPoint volume_mount_point
-    ** LPWSTR lpszVolumeName volume_name
-    *  DWORD cchBufferLength
+    ** LPCWSTR lpszVolumeMountPoint szVolumeMountPoint
+    ** LPWSTR lpszVolumeName szVolumeName
+    ** DWORD cchBufferLength ccBufferLength
 
 
 GetVolumePathNamesForVolumeNameW
@@ -845,7 +849,54 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hFile file_handle
-    *  FILETIME *lpCreationTime
-    *  FILETIME *lpLastAccessTime
-    *  FILETIME *lpLastWriteTime
+    ** HANDLE hFile hFile
+    *  FILETIME *lpCreationTime 
+    *  FILETIME *lpLastAccessTime 
+    *  FILETIME *lpLastWriteTime 
+
+Pre::
+   
+    SYSTEMTIME	sysFileTime;
+    char CreationTime[64] = "";
+    char LastAccessTime[64] = "";
+    char LastWriteTime[64] = "";
+    
+    if (lpCreationTime != NULL)
+    {
+        FileTimeToSystemTime(lpCreationTime, &sysFileTime);
+        wsprintf(CreationTime, "%u-%u-%u %u:%u:%u:%u", sysFileTime.wYear, sysFileTime.wMonth, sysFileTime.wDay,
+                 sysFileTime.wHour, sysFileTime.wMinute, sysFileTime.wSecond, sysFileTime.wMilliseconds);
+    }
+    else
+    {
+        strcpy(CreationTime,"(null)");
+    }
+
+
+    if (lpLastAccessTime != NULL)
+    {
+        FileTimeToSystemTime(lpLastAccessTime, &sysFileTime);
+        wsprintf(LastAccessTime, "%u-%u-%u %u:%u:%u:%u", sysFileTime.wYear, sysFileTime.wMonth, sysFileTime.wDay,
+                 sysFileTime.wHour, sysFileTime.wMinute, sysFileTime.wSecond, sysFileTime.wMilliseconds);
+    }
+    else
+    {
+        strcpy(LastAccessTime,"(null)");
+    }
+    
+    if (lpLastWriteTime != NULL)
+    {
+        FileTimeToSystemTime(lpLastWriteTime, &sysFileTime);
+        wsprintf(LastWriteTime, "%u-%u-%u %u:%u:%u:%u", sysFileTime.wYear, sysFileTime.wMonth, sysFileTime.wDay,
+                 sysFileTime.wHour, sysFileTime.wMinute, sysFileTime.wSecond, sysFileTime.wMilliseconds);
+    }
+    else
+    {
+        strcpy(LastAccessTime,"(null)");
+    }
+
+Logging::
+    
+    s CreationTime CreationTime
+    s LastAccessTime LastAccessTime
+    s LastWriteTime LastWriteTime

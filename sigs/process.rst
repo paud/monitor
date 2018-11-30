@@ -17,13 +17,13 @@ Signature::
 
 Parameters::
 
-    *  LPVOID lpUnknown1
-    *  LPWSTR lpApplicationName
-    ** LPWSTR lpCommandLine command_line
+    ** LPVOID lpUnknown1 hToken
+    ** LPWSTR lpApplicationName ApplicationName
+    ** LPWSTR lpCommandLine CommandLine
     *  LPSECURITY_ATTRIBUTES lpProcessAttributes
     *  LPSECURITY_ATTRIBUTES lpThreadAttributes
-    ** BOOL bInheritHandles inherit_handles
-    *  DWORD dwCreationFlags
+    ** BOOL bInheritHandles bInheritHandles
+    ** DWORD dwCreationFlags dwCreationFlags
     *  LPVOID lpEnvironment
     ** LPWSTR lpCurrentDirectory current_directory
     *  LPSTARTUPINFO lpStartupInfo
@@ -51,8 +51,8 @@ Pre::
 Interesting::
 
     u filepath
-    u command_line
-    i inherit_handles
+    u CommandLine
+    i bInheritHandles
     i creation_flags
     u current_directory
 
@@ -85,11 +85,12 @@ Logging::
     u filepath_r lpApplicationName
     i creation_flags creation_flags
     i process_identifier lpProcessInformation->dwProcessId
-    i thread_identifier lpProcessInformation->dwThreadId
-    p process_handle lpProcessInformation->hProcess
+    i ProcessId lpProcessInformation->dwThreadId
+    p ProcessHandle lpProcessInformation->hProcess
     p thread_handle lpProcessInformation->hThread
     i track track
     i stack_pivoted exploit_is_stack_pivoted()
+    
 
 Post::
 
@@ -157,9 +158,12 @@ Interesting::
 Logging::
 
     u filepath filepath
-    u filepath_r sei.lpFile
-    u parameters sei.lpParameters
-    i show_type sei.nShow
+    u Verb sei.lpVerb
+    u File sei.lpFile
+    u Parameters sei.lpParameters
+    u Directory sei.lpDirectory
+    u Class sei.lpClass
+    i nShow sei.nShow
 
 Post::
 
@@ -176,10 +180,10 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hProcess process_handle
-    ** LPCVOID lpBaseAddress base_address
+    ** HANDLE hProcess hProcess
+    ** LPCVOID lpBaseAddress BaseAddress
     *  LPVOID lpBuffer
-    *  SIZE_T nSize
+    ** SIZE_T nSize nSize
     *  SIZE_T *lpNumberOfBytesRead
 
 Ensure::
@@ -188,7 +192,7 @@ Ensure::
 
 Logging::
 
-    B buffer lpNumberOfBytesRead, lpBuffer
+    B Buffer lpNumberOfBytesRead, lpBuffer
 
 
 WriteProcessMemory
@@ -201,11 +205,11 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hProcess process_handle
-    ** LPVOID lpBaseAddress base_address
+    ** HANDLE hProcess hProcess
+    ** LPVOID lpBaseAddress BaseAddress
     *  LPCVOID lpBuffer
-    *  SIZE_T nSize
-    *  SIZE_T *lpNumberOfBytesWritten
+    ** SIZE_T nSize nSize
+    *  SIZE_T *lpNumberOfBytesWritten 
 
 Ensure::
 
@@ -214,8 +218,7 @@ Ensure::
 Logging::
 
     i process_identifier pid_from_process_handle(hProcess)
-    !B buffer lpNumberOfBytesWritten, lpBuffer
-
+    !B Buffer lpNumberOfBytesWritten, lpBuffer
 
 system
 ======
@@ -245,13 +248,13 @@ Signature::
 
 Parameters::
 
-    ** DWORD dwFlags flags
-    ** DWORD th32ProcessID process_identifier
+    ** DWORD dwFlags dwFlags
+    ** DWORD th32ProcessID th32ProcessID
 
 Interesting::
 
-    i flags
-    i process_identifier
+    i dwFlags
+    i th32ProcessID
 
 
 Process32FirstW
@@ -283,13 +286,25 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hSnapshot snapshot_handle
+    ** HANDLE hSnapshot hSnapshot
     *  LPPROCESSENTRY32W lppe
 
+Middle::
+
+    upperCaseW(lppe->szExeFile);
+    if (wcscmp(lppe->szExeFile,L"PYTHON.EXE")==0) {
+        memcpy(lppe->szExeFile,L"p00000.exe",22);
+    }
+    
 Logging::
 
-    u process_name lppe->szExeFile
-    i process_identifier copy_uint32(&lppe->th32ProcessID)
+    i th32ProcessID copy_uint32(&lppe->th32ProcessID)
+    u th32ParentProcessID lppe->th32ParentProcessID
+    u th32ModuleID lppe->th32ModuleID
+    u th32DefaultHeapID lppe->th32DefaultHeapID
+    u szExeFile lppe->szExeFile
+    u cntThreads lppe->cntThreads
+    i cPriClassBase lppe->pcPriClassBase
 
 
 Module32FirstW
@@ -318,3 +333,4 @@ Parameters::
 
     ** HANDLE hSnapshot snapshot_handle
     *  LPMODULEENTRY32W lpme
+

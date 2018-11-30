@@ -15,7 +15,7 @@ Signature::
 Parameters::
 
     *  LPCSTR lpClassName
-    ** LPCTSTR lpWindowName window_name
+    ** LPCTSTR lpWindowName WindowName
 
 Pre::
 
@@ -26,11 +26,11 @@ Pre::
 Interesting::
 
     s class_name
-    s window_name
+    s WindowName
 
 Logging::
 
-    s class_name class_name
+    s ClassName class_name
 
 
 FindWindowW
@@ -43,7 +43,7 @@ Signature::
 Parameters::
 
     *  LPWSTR lpClassName
-    ** LPWSTR lpWindowName window_name
+    ** LPWSTR lpWindowName WindowName
 
 Pre::
 
@@ -54,11 +54,11 @@ Pre::
 Interesting::
 
     u class_name
-    u window_name
+    u WindowName
 
 Logging::
 
-    u class_name class_name
+    u ClassName class_name
 
 
 FindWindowExA
@@ -70,10 +70,10 @@ Signature::
 
 Parameters::
 
-    ** HWND hwndParent parent_hwnd
-    ** HWND hwndChildAfter child_after_hwnd
+    ** HWND hwndParent hwndParent
+    ** HWND hwndChildAfter hwndChildAfter
     *  LPCTSTR lpszClass
-    ** LPCTSTR lpszWindow window_name
+    ** LPCTSTR lpszWindow WindowName
 
 Pre::
 
@@ -84,11 +84,11 @@ Pre::
 Interesting::
 
     s class_name
-    s window_name
+    s WindowName
 
 Logging::
 
-    s class_name class_name
+    s ClassName class_name
 
 
 FindWindowExW
@@ -100,10 +100,10 @@ Signature::
 
 Parameters::
 
-    ** HWND hwndParent parent_hwnd
-    ** HWND hwndChildAfter child_after_hwnd
+    ** HWND hwndParent hwndParent
+    ** HWND hwndChildAfter hwndChildAfter
     *  LPWSTR lpszClass
-    ** LPWSTR lpszWindow window_name
+    ** LPWSTR lpszWindow WindowName
 
 Pre::
 
@@ -114,11 +114,11 @@ Pre::
 Interesting::
 
     u class_name
-    u window_name
+    u WindowName
 
 Logging::
 
-    u class_name class_name
+    u ClassName class_name
 
 
 GetForegroundWindow
@@ -289,8 +289,8 @@ Logging::
     u string buf
 
 
-_CreateWindowExA
-================
+CreateWindowExA
+===============
 
 Signature::
 
@@ -298,27 +298,27 @@ Signature::
 
 Parameters::
 
-    ** DWORD dwExStyle extended_style
-    ** LPCTSTR lpClassName class_name
-    ** LPCTSTR lpWindowName window_name
-    ** DWORD dwStyle style
-    ** int x
-    ** int y
-    ** int nWidth width
-    ** int nHeight height
-    ** HWND hWndParent parent_handle
-    ** HMENU hMenu menu_handle
+    ** DWORD dwExStyle dwExStyle
+    ** LPCTSTR lpClassName ClassName
+    ** LPCTSTR lpWindowName WindowName
+    ** DWORD dwStyle dwStyle
+    ** int x x
+    ** int y y
+    ** int nWidth nWidth
+    ** int nHeight nHeight
+    ** HWND hWndParent hWndParent
+    ** HMENU hMenu hMenu
     ** HINSTANCE hInstance instance_handle
     *  LPVOID lpParam
 
 Flags::
 
-    extended_style
-    style
+    dwExStyle
+    dwStyle
 
 
-_CreateWindowExW
-================
+CreateWindowExW
+===============
 
 Signature::
 
@@ -326,23 +326,23 @@ Signature::
 
 Parameters::
 
-    ** DWORD dwExStyle extended_style
-    ** LPWSTR lpClassName class_name
-    ** LPWSTR lpWindowName window_name
-    ** DWORD dwStyle style
-    ** int x
-    ** int y
-    ** int nWidth width
-    ** int nHeight height
-    ** HWND hWndParent parent_handle
-    ** HMENU hMenu menu_handle
+    ** DWORD dwExStyle dwExStyle
+    ** LPWSTR lpClassName ClassName
+    ** LPWSTR lpWindowName WindowName
+    ** DWORD dwStyle dwStyle
+    ** int x x
+    ** int y y
+    ** int nWidth nWidth
+    ** int nHeight nHeight
+    ** HWND hWndParent hWndParent
+    ** HMENU hMenu hMenu
     ** HINSTANCE hInstance instance_handle
     *  LPVOID lpParam
 
 Flags::
 
-    extended_style
-    style
+    dwExStyle
+    dwStyle
 
 
 _DialogBoxIndirectParamA

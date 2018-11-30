@@ -22,8 +22,15 @@ Interesting::
 
     i wVersionRequested
 
+Logging::
+    
+    u wVersion (DWORD)lpWSAData->wVersion
+    u wHighVersion (DWORD)lpWSAData->wHighVersion
+    s szDescription lpWSAData->szDescription
+    s szSystemStatus lpWSAData->szSystemStatus
 
-gethostbyname
+
+_gethostbyname
 =============
 
 Signature::
@@ -33,12 +40,21 @@ Signature::
 
 Parameters::
 
-    ** const char *name hostname
+    ** const char *name name
 
 Interesting::
 
-    s hostname
+    s name
 
+Middle::
+
+    SOCKADDR_IN addr;
+    addr.sin_addr.S_un.S_addr =  *(ULONG*)ret->h_addr_list[0];
+    char * addr_str = inet_ntoa(addr.sin_addr);
+    
+Logging::
+    
+    s addr addr_str
 
 socket
 ======
@@ -74,7 +90,7 @@ Signature::
 
 Parameters::
 
-    ** SOCKET s
+    ** SOCKET s socket
     *  struct sockaddr *name
     *  int *namelen
 
@@ -87,6 +103,7 @@ Logging::
 
     s ip_address ip
     i port port
+    u namelen namelen
 
 
 connect
@@ -121,7 +138,7 @@ Post::
    
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
 
 
@@ -136,28 +153,14 @@ Signature::
 Parameters::
 
     ** SOCKET s socket
-    *  const char *buf
-    *  int len
+    ** const char *buf buf_addr
+    ** int len len
     *  int flags
 
 Logging::
 
     i sent ret
-    !b buffer (uintptr_t)(ret > 0 ? ret : 0), buf
-
-Post::
-
-    char *tmpstr;
-    char *delim = " ";
-    char *p;
-    printf("%s ", strtok(buf, delim));
-    while (p = strtok(NULL, delim))
-        printf("%s ", p);
-    printf("\n");
-    pipe("FILE_NEW:%Z", buf);
-  
-
-    free_unicode_buffer(buf);
+    !b buf (uintptr_t)(ret > 0 ? ret : 0), buf
 
 
 sendto
@@ -172,8 +175,8 @@ Parameters::
 
     ** SOCKET s socket
     *  const char *buf
-    *  int len
-    ** int flags
+    ** int len len
+    ** int flags flags
     *  const struct sockaddr *to
     *  int tolen
 
@@ -184,10 +187,10 @@ Pre::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
     i sent ret
-    !b buffer (uintptr_t)(ret > 0 ? ret : 0), buf
+    !b buff (uintptr_t)(ret > 0 ? ret : 0), buf
 
 
 recv
@@ -201,9 +204,9 @@ Signature::
 Parameters::
 
     ** SOCKET s socket
-    *  char *buf
-    *  int len
-    *  int flags
+    *  char *buf 
+    ** int len len
+    ** int flags flags
 
 Logging::
 
@@ -223,8 +226,8 @@ Parameters::
 
     ** SOCKET s socket
     *  char *buf
-    *  int len
-    ** int flags
+    ** int len len
+    ** int flags flags
     *  struct sockaddr *from
     *  int *fromlen
 
@@ -235,9 +238,9 @@ Middle::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
-    !b buffer (uintptr_t)(ret > 0 ? ret : 0), buf
+    !b buf (uintptr_t)(ret > 0 ? ret : 0), buf
 
 
 accept
@@ -285,7 +288,7 @@ Pre::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
 
 
@@ -300,7 +303,7 @@ Signature::
 Parameters::
 
     ** SOCKET s socket
-    ** int backlog
+    ** int backlog backlog
 
 
 select
@@ -413,7 +416,7 @@ Middle::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
 
 
@@ -446,7 +449,10 @@ Middle::
 
 Logging::
 
-    !b buffer length, buf
+    u len lpBuffers[0].len
+    !b buf length, buf
+    u dwNumberOfBytesRecvd lpNumberOfBytesRecvd != NULL ? *lpNumberOfBytesRecvd : 0
+    u dwFlags lpFlags != NULL ? *lpFlags : 0
 
 Post::
 
@@ -487,9 +493,12 @@ Middle::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
-    !b buffer length, buf
+    u dwFlags lpFlags != NULL ? *lpFlags : 0
+    u dwNumberOfBytesRecvd lpNumberOfBytesRecvd != NULL ? *lpNumberOfBytesRecvd : 0
+    !b buff length, buf
+    u len length
 
 Post::
 
@@ -508,9 +517,9 @@ Parameters::
 
     ** SOCKET s socket
     *  LPWSABUF lpBuffers
-    *  DWORD dwBufferCount
-    *  LPDWORD lpNumberOfBytesSent
-    *  DWORD dwFlags
+    ** DWORD dwBufferCount dwBufferCount
+    ** LPDWORD lpNumberOfBytesSent dwNumberOfBytesSent
+    ** DWORD dwFlags dwFlags
     *  LPWSAOVERLAPPED lpOverlapped
     *  LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 
@@ -525,7 +534,9 @@ Middle::
 
 Logging::
 
-    !b buffer length, buf
+    !b buff length, buf
+    u len length
+    
 
 Post::
 
@@ -544,9 +555,9 @@ Parameters::
 
     ** SOCKET s socket
     *  LPWSABUF lpBuffers
-    *  DWORD dwBufferCount
-    *  LPDWORD lpNumberOfBytesSent
-    *  DWORD dwFlags
+    ** DWORD dwBufferCount dwBufferCount
+    ** LPDWORD lpNumberOfBytesSent dwNumberOfBytesSent
+    ** DWORD dwFlags dwFlags
     *  const struct sockaddr *lpTo
     *  int iToLen
     *  LPWSAOVERLAPPED lpOverlapped
@@ -568,9 +579,10 @@ Middle::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
-    !b buffer length, buf
+    !b buff length, buf
+    u len length
 
 Post::
 
@@ -614,23 +626,24 @@ Signature::
 
 Parameters::
 
-    ** int af
-    ** int type
-    ** int protocol
+    ** int af af
+    ** int type type
+    ** int protocol protocol
     *  LPWSAPROTOCOL_INFO lpProtocolInfo
     *  GROUP g
-    ** DWORD dwFlags flags
+    ** DWORD dwFlags dwFlags
 
 Interesting::
 
     i af
     i type
     i protocol
-    i flags
+    i dwFlags
 
 Logging::
 
     i socket ret
+    s szProtocol (lpProtocolInfo != NULL) ? lpProtocolInfo->szProtocol : "(null)"
 
 
 WSAConnect
@@ -643,7 +656,7 @@ Signature::
 
 Parameters::
 
-    ** SOCKET s
+    ** SOCKET s socket
     *  const struct sockaddr *name
     *  int namelen
     *  LPWSABUF lpCallerData
@@ -660,7 +673,7 @@ Pre::
 
 Logging::
 
-    s ip_address ip
+    s addr ip
     i port port
 
 

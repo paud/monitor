@@ -37,7 +37,7 @@ Signature::
 
 Parameters::
 
-    ** LPCWSTR servername server_name
+    ** LPCWSTR servername servername
     ** LPCWSTR username username
     ** DWORD level level
     *  LPBYTE *bufptr

@@ -29,8 +29,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <shlobj.h>
 #include <tlhelp32.h>
 #include <lm.h>
+#include <wtsapi32.h>
+#include <shlwapi.h>
 #include "hook-info.h"
 #include "ntapi.h"
+#include "sputils.h"
 
 {%- for hook in sigs if hook.is_hook and not hook.ignore: %}
 

@@ -12,10 +12,10 @@ CoCreateInstance
 
 Parameters::
 
-    ** REFCLSID rclsid clsid
+    ** REFCLSID rclsid rclsid
     *  LPUNKNOWN pUnkOuter
     ** DWORD dwClsContext class_context
-    ** REFIID riid iid
+    ** REFIID riid riid
     *  LPVOID *ppv
 
 Interesting::
@@ -24,9 +24,31 @@ Interesting::
     i class_context
     b sizeof(IID), riid
 
+pre::
+
+    char *cCLSID = NULL;
+    char *rRIID = NULL;
+
+    cCLSID = (char *)malloc(128+3); 
+    rRIID = (char *)malloc(128+3);
+    wsprintf(cCLSID, "{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", rclsid->Data1, 
+              rclsid->Data2, rclsid->Data3, rclsid->Data4[0], rclsid->Data4[1], rclsid->Data4[2], 
+              rclsid->Data4[3], rclsid->Data4[4], rclsid->Data4[5], rclsid->Data4[6], rclsid->Data4[7]);
+    
+    wsprintf(rRIID,"{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", riid->Data1,
+             riid->Data2, riid->Data3, riid->Data4[0], riid->Data4[1], riid->Data4[2],
+             riid->Data4[3], riid->Data4[4], riid->Data4[5], riid->Data4[6], riid->Data4[7]);
+
 Post::
 
     ole_enable_hooks(rclsid);
+    free(cCLSID);
+    free(rRIID);
+
+Logging::
+ 
+    s cCLSID cCLSID
+    s rRIID rRIID
 
 
 OleInitialize
@@ -71,9 +93,9 @@ CoCreateInstanceEx
 
 Parameters::
 
-    ** REFCLSID rclsid clsid
+    *  REFCLSID rclsid
     *  IUnknown *punkOuter
-    ** DWORD dwClsCtx class_context
+    ** DWORD dwClsCtx dwClsCtx
     *  COSERVERINFO *pServerInfo
     *  DWORD dwCount
     *  MULTI_QI *pResults
@@ -94,15 +116,27 @@ Pre::
 
     bson_append_finish_array(&b);
     bson_finish(&b);
+    
+    LPOLESTR lpProgID = NULL;
+    ProgIDFromCLSID(rclsid, &lpProgID);
+    char *CLSID = NULL;
+
+    CLSID = (char *)malloc(128+3); 
+    wsprintf(CLSID, "{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", rclsid->Data1, 
+              rclsid->Data2, rclsid->Data3, rclsid->Data4[0], rclsid->Data4[1], rclsid->Data4[2], 
+              rclsid->Data4[3], rclsid->Data4[4], rclsid->Data4[5], rclsid->Data4[6], rclsid->Data4[7]);
 
 Logging::
 
     z iid &b
+    s ProgId lpProgID
+    s CLSID CLSID
 
 Post::
 
     ole_enable_hooks(rclsid);
     bson_destroy(&b);
+    free(CLSID);
 
 
 CoGetClassObject
@@ -110,15 +144,19 @@ CoGetClassObject
 
 Parameters::
 
-    ** REFCLSID rclsid clsid
-    ** DWORD dwClsContext class_context
+    ** REFCLSID rclsid CLSID
+    ** DWORD dwClsContext dwClsCtx
     *  COSERVERINFO *pServerInfo
-    ** REFIID riid iid
+    ** REFIID riid InterfaceId
     *  LPVOID *ppv
 
 Post::
 
     ole_enable_hooks(rclsid);
+
+Logging::
+    
+    s MachineName pServerInfo != NULL ? pServerInfo->pwszName : L"(null)"
 
 
 OleConvertOLESTREAMToIStorage

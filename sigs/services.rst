@@ -14,15 +14,15 @@ Signature::
 
 Parameters::
 
-    ** LPCTSTR lpMachineName machine_name
-    ** LPCTSTR lpDatabaseName database_name
-    ** DWORD dwDesiredAccess desired_access
+    ** LPCTSTR lpMachineName MachineName
+    ** LPCTSTR lpDatabaseName DatabaseName
+    ** DWORD dwDesiredAccess dwDesiredAccess
 
 Interesting::
 
-    s machine_name
-    s database_name
-    i desired_access
+    s MachineName
+    s DatabaseName
+    i dwDesiredAccess
 
 
 OpenSCManagerW
@@ -34,15 +34,15 @@ Signature::
 
 Parameters::
 
-    ** LPWSTR lpMachineName machine_name
-    ** LPWSTR lpDatabaseName database_name
-    ** DWORD dwDesiredAccess desired_access
+    ** LPWSTR lpMachineName MachineName
+    ** LPWSTR lpDatabaseName DatabaseName
+    ** DWORD dwDesiredAccess dwDesiredAccess
 
 Interesting::
 
-    u machine_name
-    u database_name
-    i desired_access
+    u MachineName
+    u DatabaseName
+    i dwDesiredAccess
 
 
 CreateServiceA
@@ -54,19 +54,19 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hSCManager service_manager_handle
-    ** LPCTSTR lpServiceName service_name
-    ** LPCTSTR lpDisplayName display_name
-    ** DWORD dwDesiredAccess desired_access
-    ** DWORD dwServiceType service_type
-    ** DWORD dwStartType start_type
-    ** DWORD dwErrorControl error_control
-    *  LPCTSTR lpBinaryPathName
-    *  LPCTSTR lpLoadOrderGroup
-    *  LPDWORD lpdwTagId
-    *  LPCTSTR lpDependencies
-    ** LPCTSTR lpServiceStartName service_start_name
-    ** LPCTSTR lpPassword password
+    ** SC_HANDLE hSCManager hSCManager
+    ** LPCTSTR lpServiceName ServiceName 
+    ** LPCTSTR lpDisplayName DisplayName
+    ** DWORD dwDesiredAccess dwDesiredAccess
+    ** DWORD dwServiceType dwServiceType
+    ** DWORD dwStartType dwStartType
+    ** DWORD dwErrorControl dwErrorControl
+    ** LPCTSTR lpBinaryPathName BinaryPathName
+    ** LPCTSTR lpLoadOrderGroup LoadOrderGroup
+    *  LPDWORD lpdwTagId 
+    ** LPCTSTR lpDependencies Dependencies
+    ** LPCTSTR lpServiceStartName ServiceStartName
+    ** LPCTSTR lpPassword Password
 
 Pre::
 
@@ -75,15 +75,15 @@ Pre::
 
 Interesting::
 
-    s service_name
-    s display_name
-    i desired_access
-    i service_type
-    i start_type
-    i error_control
+    s ServiceName
+    s DisplayName
+    i dwDesiredAccess
+    i dwServiceType
+    i dwStartType
+    i dwErrorControl
     u filepath
-    s service_start_name
-    s password
+    s ServiceStartName
+    s Password
 
 Logging::
 
@@ -105,19 +105,19 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hSCManager service_manager_handle
-    ** LPWSTR lpServiceName service_name
-    ** LPWSTR lpDisplayName display_name
-    ** DWORD dwDesiredAccess desired_access
-    ** DWORD dwServiceType service_type
-    ** DWORD dwStartType start_type
-    ** DWORD dwErrorControl error_control
-    *  LPWSTR lpBinaryPathName
-    *  LPWSTR lpLoadOrderGroup
+    ** SC_HANDLE hSCManager hSCManager
+    ** LPWSTR lpServiceName ServiceName
+    ** LPWSTR lpDisplayName DisplayName
+    ** DWORD dwDesiredAccess dwDesiredAccess
+    ** DWORD dwServiceType dwServiceType
+    ** DWORD dwStartType dwStartType
+    ** DWORD dwErrorControl dwErrorControl
+    ** LPWSTR lpBinaryPathName BinaryPathName
+    ** LPWSTR lpLoadOrderGroup LoadOrderGroup
     *  LPDWORD lpdwTagId
-    *  LPWSTR lpDependencies
-    ** LPWSTR lpServiceStartName service_start_name
-    ** LPWSTR lpPassword password
+    ** LPWSTR lpDependencies Dependencies
+    ** LPWSTR lpServiceStartName ServiceStartName
+    ** LPWSTR lpPassword Password
 
 Pre::
 
@@ -126,15 +126,15 @@ Pre::
 
 Interesting::
 
-    u service_name
-    u display_name
-    i desired_access
-    i service_type
-    i start_type
-    i error_control
-    u filepath
-    u service_start_name
-    u password
+    u ServiceName
+    u DisplayName
+    i dwDesiredAccess
+    i dwServiceType
+    i dwStartType
+    i dwErrorControl
+    u BinaryPathName
+    u ServiceStartName
+    u Password
 
 Logging::
 
@@ -156,14 +156,14 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hSCManager service_manager_handle
-    ** LPCTSTR lpServiceName service_name
-    ** DWORD dwDesiredAccess desired_access
+    ** SC_HANDLE hSCManager hSCManager
+    ** LPCTSTR lpServiceName ServiceName
+    ** DWORD dwDesiredAccess dwDesiredAccess
 
 Interesting::
 
-    s service_name
-    i desired_access
+    s ServiceName
+    i dwDesiredAccess
 
 Logging::
 
@@ -179,14 +179,14 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hSCManager service_manager_handle
-    ** LPWSTR lpServiceName service_name
-    ** DWORD dwDesiredAccess desired_access
+    ** SC_HANDLE hSCManager hSCManager
+    ** LPWSTR lpServiceName ServiceName
+    ** DWORD dwDesiredAccess dwDesiredAccess
 
 Interesting::
 
-    u service_name
-    i desired_access
+    u ServiceName
+    i dwDesiredAccess
 
 Logging::
 
@@ -202,9 +202,9 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hService service_handle
-    *  DWORD dwNumServiceArgs
-    *  LPCTSTR *lpServiceArgVectors
+    ** SC_HANDLE hService hService
+    ** DWORD dwNumServiceArgs dwNumServiceArgs
+    * LPCTSTR *lpServiceArgVectors ServiceArgVectors
 
 Logging::
 
@@ -220,9 +220,9 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hService service_handle
-    *  DWORD dwNumServiceArgs
-    *  LPWSTR *lpServiceArgVectors
+    ** SC_HANDLE hService hService
+    ** DWORD dwNumServiceArgs dwNumServiceArgs
+    *  LPWSTR *lpServiceArgVectors ServiceArgVectors
 
 Logging::
 
@@ -238,9 +238,51 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hService service_handle
-    ** DWORD dwControl control_code
+    ** SC_HANDLE hService hService
+    ** DWORD dwControl dwControl
     *  LPSERVICE_STATUS lpServiceStatus
+
+Pre::
+
+    #define DWORD_NULL						(DWORD)0
+    DWORD dwServiceType;
+    DWORD dwCurrentState;
+    DWORD dwControlsAccepted;
+    DWORD dwWin32ExitCode;
+    DWORD dwServiceSpecificExitCode;
+    DWORD dwCheckPoint,dwWaitHint;
+
+    if (lpServiceStatus != NULL)
+    {
+        dwServiceType = lpServiceStatus->dwServiceType;
+        dwCurrentState = lpServiceStatus->dwCurrentState;
+        dwControlsAccepted = lpServiceStatus->dwCurrentState;
+        dwWin32ExitCode = lpServiceStatus->dwWin32ExitCode;
+        dwServiceSpecificExitCode = lpServiceStatus->dwServiceSpecificExitCode;
+        dwCheckPoint = lpServiceStatus->dwCheckPoint;
+        dwWaitHint = lpServiceStatus->dwWaitHint;
+    } 
+    else
+    {
+        dwServiceType = DWORD_NULL;
+        dwCurrentState = DWORD_NULL;
+        dwControlsAccepted = DWORD_NULL;
+        dwWin32ExitCode = DWORD_NULL;
+        dwServiceSpecificExitCode = DWORD_NULL;
+        dwCheckPoint = DWORD_NULL;
+        dwWaitHint = DWORD_NULL;
+    }
+    
+
+Logging::
+
+    i dwServiceType dwServiceType
+    i dwCurrentState dwCurrentState
+    i dwControlsAccepted dwControlsAccepted
+    i dwWin32ExitCode dwWin32ExitCode
+    i dwServiceSpecificExitCode dwServiceSpecificExitCode
+    i dwCheckPoint dwCheckPoint
+    i dwWaitHint dwWaitHint
 
 
 DeleteService
@@ -252,7 +294,7 @@ Signature::
 
 Parameters::
 
-    ** SC_HANDLE hService service_handle
+    ** SC_HANDLE hService hService
 
 
 EnumServicesStatusA
@@ -272,6 +314,23 @@ Parameters::
     *  LPDWORD pcbBytesNeeded
     *  LPDWORD lpServicesReturned
     *  LPDWORD lpResumeHandle
+
+Middle::
+
+    //string str=malloc(1024*1024);
+    //memset(str,0,1024*1024);
+    //char str[1024]={0};
+	//for (int i = 0; i < lpServicesReturned; i++)
+	//{cant make output infomation, it will be broken
+		//stradd(str,lpServices[i].lpDisplayName);
+        //stradd(str,",");
+	//}
+    //str[length(str) - 1] = 0;
+    //char str[10]="1\n";
+
+Logging::
+
+    i DisplayNameList lpServicesReturned
 
 
 EnumServicesStatusW

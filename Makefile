@@ -1,10 +1,10 @@
 CC32 = i686-w64-mingw32-gcc -m32 -g
-CC64 = x86_64-w64-mingw32-gcc -m64 -g
+CC64 = x86_64-w64-mingw32-gcc -m64 #-g
 AR = ar
 CFLAGS = -Wall -Wextra -std=c99 -static -Wno-missing-field-initializers \
 		 -I inc/ -I objects/code/ -I src/bson/ -I sputils/ -I src/sha1/ #-mwindows 
 		                                                    #这里的-mwindows使得编译出来的文件只能用在cygwin和mimgw，而在dos下printf没有输出
-LDFLAGS = -lshlwapi -lwsock32
+LDFLAGS = -lshlwapi -lwsock32 -lole32
 MAKEFLAGS = -j8
 
 SIGS = $(wildcard sigs/*.rst)
@@ -51,7 +51,7 @@ LIBCAPSTONE64 = src/capstone/capstone-x64.lib
 
 BINARIES = \
 	bin/inject-x86.exe bin/inject-x64.exe bin/is32bit.exe \
-	bin/monitor-x86.dll bin/monitor-x64.dll
+	bin/monitor-x64.dll #bin/monitor-x86.dll 
 # DEBUG = 1
 ifdef DEBUG
 	CFLAGS += -DDEBUG=1 -O0 -ggdb

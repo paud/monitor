@@ -16,14 +16,14 @@ Signature::
 Parameters::
 
     *  LPUNKNOWN pCaller
-    ** LPWSTR szURL url
+    ** LPWSTR szURL szURL
     *  LPWSTR szFileName
     *  DWORD dwReserved
     *  LPVOID lpfnCB
 
 Interesting::
 
-    u url
+    u szURL
     u filepath
 
 Pre::
@@ -34,7 +34,7 @@ Pre::
 Logging::
 
     u filepath filepath
-    u filepath_r szFileName
+    u szFileName szFileName
     i stack_pivoted exploit_is_stack_pivoted()
 
 Post::
@@ -110,19 +110,19 @@ Signature::
 
 Parameters::
 
-    ** LPCTSTR lpszAgent user_agent
-    ** DWORD dwAccessType access_type
-    ** LPCTSTR lpszProxyName proxy_name
-    ** LPCTSTR lpszProxyBypass proxy_bypass
-    ** DWORD dwFlags flags
+    ** LPCTSTR lpszAgent lpszAgent
+    ** DWORD dwAccessType dwAccessType
+    ** LPCTSTR lpszProxyName lpszProxyName
+    ** LPCTSTR lpszProxyBypass lpszProxyBypass
+    ** DWORD dwFlags dwFlags
 
 Interesting::
 
-    s user_agent
-    i access_type
-    s proxy_name
-    s proxy_bypass
-    i flags
+    s lpszAgent
+    i dwAccessType
+    s lpszProxyName
+    s lpszProxyBypass
+    i dwFlags
 
 
 InternetOpenW
@@ -161,22 +161,26 @@ Signature::
 Parameters::
 
     ** HINTERNET hInternet internet_handle
-    ** LPCTSTR lpszServerName hostname
-    ** INTERNET_PORT nServerPort port
-    ** LPCTSTR lpszUsername username
-    ** LPCTSTR lpszPassword password
-    ** DWORD dwService service
-    ** DWORD dwFlags flags
+    ** LPCTSTR lpszServerName szServerName
+    ** INTERNET_PORT nServerPort nServerPort
+    ** LPCTSTR lpszUsername szUsername
+    ** LPCTSTR lpszPassword szPassword
+    ** DWORD dwService dwService
+    ** DWORD dwFlags dwFlags
     *  DWORD_PTR dwContext
 
 Interesting::
 
-    s hostname
-    i port
-    s username
-    s password
-    i service
-    i flags
+    s szServerName
+    i nServerPort
+    s szUsername
+    s szPassword
+    i dwService
+    i dwFlags
+
+Logging::
+
+    s dwContext dwContext
 
 
 InternetConnectW
@@ -218,11 +222,11 @@ Signature::
 
 Parameters::
 
-    ** HINTERNET hInternet internet_handle
-    ** LPCTSTR lpszUrl url
-    *  LPCTSTR lpszHeaders
-    *  DWORD dwHeadersLength
-    ** DWORD dwFlags flags
+    ** HINTERNET hInternet hInternet
+    ** LPCTSTR lpszUrl szUrl 
+    ** LPCTSTR lpszHeaders szHeaders
+    ** DWORD dwHeadersLength dwHeadersLength
+    ** DWORD dwFlags dwFlags
     *  DWORD_PTR dwContext
 
 Pre::
@@ -234,13 +238,14 @@ Pre::
 
 Interesting::
 
-    s url
+    s szUrl
     S headers_length, lpszHeaders
-    i flags
+    i dwFlags
 
 Logging::
 
     S headers headers_length, lpszHeaders
+    u dwContext dwContext
 
 
 InternetOpenUrlW
@@ -328,22 +333,22 @@ Signature::
 
 Parameters::
 
-    ** HINTERNET hConnect connect_handle
-    ** LPCTSTR lpszVerb http_method
-    ** LPCTSTR lpszObjectName path
-    ** LPCTSTR lpszVersion http_version
-    ** LPCTSTR lpszReferer referer
-    *  LPCTSTR *lplpszAcceptTypes
-    ** DWORD dwFlags flags
-    *  DWORD_PTR dwContext
+    ** HINTERNET hConnect hHttpSession
+    ** LPCTSTR lpszVerb szVerb
+    ** LPCTSTR lpszObjectName szObjectName
+    ** LPCTSTR lpszVersion szVersion
+    ** LPCTSTR lpszReferer szReferer
+    ** LPCTSTR *lplpszAcceptTypes szAcceptTypes
+    ** DWORD dwFlags dwFlags
+    *  DWORD_PTR dwContext 
 
 Interesting::
 
-    s http_method
-    s path
-    s http_version
-    s referer
-    i flags
+    s szVerb
+    s szObjectName
+    s szVersion
+    s szReferer
+    i dwFlags
 
 
 HttpOpenRequestW
@@ -356,22 +361,22 @@ Signature::
 
 Parameters::
 
-    ** HINTERNET hConnect connect_handle
-    ** LPWSTR lpszVerb http_method
-    ** LPWSTR lpszObjectName path
-    ** LPWSTR lpszVersion http_version
-    ** LPWSTR lpszReferer referer
-    *  LPWSTR *lplpszAcceptTypes
+    ** HINTERNET hConnect hHttpSession
+    ** LPWSTR lpszVerb szVerb
+    ** LPWSTR lpszObjectName szObjectName
+    ** LPWSTR lpszVersion szVersion
+    ** LPWSTR lpszReferer szReferer
+    ** LPWSTR *lplpszAcceptTypes szAcceptTypes
     ** DWORD dwFlags flags
     *  DWORD_PTR dwContext
 
 Interesting::
 
-    u http_method
-    u path
-    u http_version
-    u referer
-    i flags
+    s szVerb
+    s szObjectName
+    s szVersion
+    s szReferer
+    i dwFlags
 
 
 HttpSendRequestA
@@ -452,9 +457,9 @@ Signature::
 
 Parameters::
 
-    ** HINTERNET hFile request_handle
+    ** HINTERNET hFile hFile
     *  LPVOID lpBuffer
-    *  DWORD dwNumberOfBytesToRead
+    ** DWORD dwNumberOfBytesToRead dwNumberOfBytesToRead
     *  LPDWORD lpdwNumberOfBytesRead
 
 Ensure::
@@ -463,7 +468,7 @@ Ensure::
 
 Logging::
 
-    b buffer (uintptr_t) copy_uint32(lpdwNumberOfBytesRead), lpBuffer
+    b Buffer (uintptr_t) copy_uint32(lpdwNumberOfBytesRead), lpBuffer
 
 
 InternetWriteFile
@@ -738,6 +743,12 @@ Parameters::
 
     *  PIP_ADAPTER_INFO pAdapterInfo
     *  PULONG pOutBufLen
+
+Logging::
+    
+    s AdapterNmae pAdapterInfo->AdapterName
+    u AdapterAdress pAdapterInfo->Address
+    u ADescription pAdapterInfo->Type
 
 
 GetAdaptersAddresses

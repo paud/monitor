@@ -41,13 +41,13 @@ Signature::
 
 Parameters::
 
-    ** HANDLE hProcess process_handle
+    ** HANDLE hProcess hProcess
     *  LPSECURITY_ATTRIBUTES lpThreadAttributes
     ** SIZE_T dwStackSize stack_size
-    ** LPTHREAD_START_ROUTINE lpStartAddress function_address
+    ** LPTHREAD_START_ROUTINE lpStartAddress StartAddress
     ** LPVOID lpParameter parameter
-    ** DWORD dwCreationFlags flags
-    ** LPDWORD lpThreadId thread_identifier
+    ** DWORD dwCreationFlags dwCreationFlags
+    ** LPDWORD lpThreadId ThreadId
 
 Pre::
 
