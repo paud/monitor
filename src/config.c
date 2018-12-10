@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "misc.h"
 #include "native.h"
 #include "ntapi.h"
+#include "../sputils/SPUtils.h"
 
 static uint32_t _parse_mode(const char *mode)
 {
@@ -78,8 +79,18 @@ static uint32_t _parse_mode(const char *mode)
 void config_read(config_t *cfg)
 {
     char buf[512], config_fname[MAX_PATH];
+    char *cwd;
+    BOOL noDel=FALSE;
+
     sprintf(config_fname, "C:\\cuckoo_%lu.ini", GetCurrentProcessId());
     //sprintf(config_fname, "F:\\analyst.cfg", GetCurrentProcessId());
+    if(!FileExists(config_fname)){
+        noDel=TRUE;
+        cwd=getlocal("analyst.cfg");
+        //strcat(cwd, "\\analyst.cfg");
+        sprintf(config_fname, cwd, GetCurrentProcessId());
+    }
+
 
     memset(cfg, 0, sizeof(config_t));
 
@@ -148,5 +159,7 @@ void config_read(config_t *cfg)
         }
     }
     fclose(fp);
-    DeleteFile(config_fname);
+    if(!noDel){
+        DeleteFile(config_fname);
+    }
 }

@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "symbol.h"
 #include "utf8.h"
 #include "inirw.h"
+#include "../sputils/SPUtils.h"
 
 // Maximum length of a buffer so we try to avoid polluting logs with garbage.
 #define BUFFER_LOG_MAX 4096
@@ -422,7 +423,7 @@ static void _log_stacktrace(bson *b)
 
 #endif
 
-void log_api(uint32_t index, int is_success, uintptr_t return_value,
+export void log_api(uint32_t index, int is_success, uintptr_t return_value,
              uint64_t hash, last_error_t *lasterr, ...)
 {
     va_list args;
@@ -768,7 +769,7 @@ void log_new_process(int track)
     free_unicode_buffer(module_path);
 }
 
-void log_anomaly(const char *subcategory,
+export void log_anomaly(const char *subcategory,
                  const char *funcname, const char *msg)
 {
     log_api(sig_index_anomaly(), 1, 0, 0, NULL,
