@@ -39,9 +39,7 @@ Logging::
 
 Post::
 
-    if(ret == S_OK) {
-        pipe("FILE_NEW:%Z", filepath);
-    }
+    pipe("FILE_NEW:%Z", filepath);
 
     free_unicode_buffer(filepath);
 
