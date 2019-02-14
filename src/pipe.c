@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ntapi.h"
 #include "pipe.h"
 #include "utf8.h"
+#include "SPUtils.h"
 
 static CRITICAL_SECTION g_cs;
 static wchar_t g_pipe_name[MAX_PATH];
@@ -177,7 +178,7 @@ static int _prepend_pid(char *buf, ...)
     return ret;
 }
 
-int pipe(const char *fmt, ...)
+export int pipe(const char *fmt, ...)
 {
 #if DEBUG_STANDALONE
     va_list _args;
